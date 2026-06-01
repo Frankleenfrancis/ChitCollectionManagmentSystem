@@ -1,0 +1,10 @@
+export const useUser = () => {
+    // In a real app, this might come from a Context provider or a secure cookie
+    const userSession = JSON.parse(localStorage.getItem("userSession") || "{}");
+
+    return {
+        name: userSession.name || "Guest",
+        role: userSession.role || "AGENT", // e.g., 'ADMIN', 'AGENT', 'CLIENT'
+        id: userSession.id || "0000"
+    };
+};
