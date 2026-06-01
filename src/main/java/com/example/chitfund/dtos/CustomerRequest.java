@@ -19,7 +19,7 @@ public class CustomerRequest {
     @Email(message = "Enter a valid email address")
     private String email;
 
-    @Column(nullable = false)
+   
     private String password;
 
 
