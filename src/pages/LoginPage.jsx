@@ -20,9 +20,9 @@ export default function LoginPage() {
       console.log("Login response:", response);
 
       const role =
-        response?.role ||           // if AuthContext returns user directly
-        response?.data?.role ||     // if AuthContext returns res.data
-        response?.data?.data?.role; // if AuthContext returns full axios response
+        response?.role ||           
+        response?.data?.role ||     
+        response?.data?.data?.role; 
 
       if (role === "ADMIN") {
         navigate("/admin/dashboard");

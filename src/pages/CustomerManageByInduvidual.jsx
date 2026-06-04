@@ -1,702 +1,701 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { customerApi } from "../api/customerApi";
 import { chitPlanApi } from "../api/chitPlanApi";
 import { chitCollectionApi } from "../api/chitCollectionApi";
-import api from "../api/axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../components/AuthContext";
+import { Search, Plus, X, BadgeIndianRupee } from "lucide-react";
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   UTILITIES
-───────────────────────────────────────────────────────────────────────────── */
-const fmt = (v) =>
-    v == null
-        ? "₹0"
-        : `₹${Number(v).toLocaleString("en-IN", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        })}`;
-
-const initials = (name) =>
-    name
-        ?.split(" ")
-        .map((w) => w[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase() || "??";
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   STEP BAR
-───────────────────────────────────────────────────────────────────────────── */
-const STEPS = ["Verify Phone", "Choose Plan", "My Dashboard"];
-
-function StepBar({ current }) {
-    return (
-        <div className="flex items-center justify-center gap-0 mb-8">
-            {STEPS.map((label, i) => {
-                const done = i < current;
-                const active = i === current;
-                return (
-                    <div key={i} className="flex items-center">
-                        <div className="flex flex-col items-center">
-                            <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300 ${done
-                                    ? "bg-emerald-500 text-white"
-                                    : active
-                                        ? "bg-gray-900 text-white ring-4 ring-gray-200"
-                                        : "bg-gray-200 text-gray-400"
-                                    }`}
-                            >
-                                {done ? "✓" : i + 1}
-                            </div>
-                            <span
-                                className={`text-[10px] mt-1 font-bold uppercase tracking-wider whitespace-nowrap ${active ? "text-gray-900" : done ? "text-emerald-500" : "text-gray-400"
-                                    }`}
-                            >
-                                {label}
-                            </span>
-                        </div>
-                        {i < STEPS.length - 1 && (
-                            <div
-                                className={`w-16 h-0.5 mx-1 mb-4 transition-all duration-500 ${done ? "bg-emerald-400" : "bg-gray-200"
-                                    }`}
-                            />
-                        )}
-                    </div>
-                );
-            })}
-        </div>
-    );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   STEP 1 — PHONE VERIFY
-   Calls POST /api/v1/auth/customer-login  { phone }
-   Backend returns: { data: { token, customer } }
-───────────────────────────────────────────────────────────────────────────── */
-function PhoneVerifyStep({ onVerified }) {
-    const [phone, setPhone] = useState("");
+export default function CustomerManagement() {
+    const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [page, setPage] = useState(0);
+    const [search, setSearch] = useState("");
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalElements, setTotalElements] = useState(0);
+    const [showModal, setShowModal] = useState(false);
+    const [viewMode, setViewMode] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [plans, setPlans] = useState([]);
+    const [saving, setSaving] = useState(false);
+    const [openMenu, setOpenMenu] = useState(null);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const { user } = useAuth();
+    const role = user?.role;
+    const userId = user?.id;
 
-        const cleaned = phone.replace(/\D/g, "");
+    const isCustomer = role === "CUSTOMER";
+    const isAdmin = role === "ADMIN";
 
-        if (cleaned.length !== 10) {
-            setError("Enter valid mobile number");
-            return;
-        }
+    const [form, setForm] = useState({
+        fullName: "",
+        username: "",
+        password: "",
+        phone: "",
+        email: "",
+        address: "",
+        city: "",
+        role: "CUSTOMER",
+        active: true,
+    });
 
-        setLoading(true);
-        setError("");
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [selectedPlan, setSelectedPlan] = useState("");
 
+    const navigate = useNavigate();
+
+    const initials = (name) =>
+        name
+            ?.split(" ")
+            .map((w) => w[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase() || "??";
+
+    // Debounce search
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 400);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    // ─── Load Customers ────────────────────────────────────────────────────────
+    const loadCustomers = async () => {
+        if (role === undefined || userId === undefined) return;
         try {
+            setLoading(true);
 
-            const customer = await customerApi.getByPhone(cleaned);
-
-            if (!customer) {
-                throw new Error("Customer not found");
+            if (isCustomer) {
+                // Fetch all then filter by userId — safe fallback
+                // if your API has getByUserId use that instead
+                const data = await customerApi.getAll(0, 100, "createdAt", "desc");
+                const all = data.content || [];
+                const mine = all.filter(
+                    (c) => c.id == userId || c.userId == userId
+                );
+                setCustomers(mine);
+                setTotalPages(1);
+                setTotalElements(mine.length);
+                return;
             }
 
-            onVerified(customer);
-
+            // ADMIN / AGENT
+            let data;
+            if (debouncedSearch.trim()) {
+                data = await customerApi.search(debouncedSearch, page, 10);
+            } else {
+                data = await customerApi.getAll(page, 10, "createdAt", "desc");
+            }
+            setCustomers(data.content || []);
+            setTotalPages(data.totalPages || 0);
+            setTotalElements(data.totalElements || 0);
         } catch (err) {
-
-            setError(
-                err?.response?.data?.message ||
-                "Customer not found"
-            );
-
+            console.error("loadCustomers error:", err);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
+        loadCustomers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, debouncedSearch, role, userId]);
 
-        const customerId = localStorage.getItem("customerId");
-
-        if (customerId) {
-            loadCustomer(customerId);
+    // ─── Plans ─────────────────────────────────────────────────────────────────
+    const loadPlans = async () => {
+        try {
+            const response = await chitPlanApi.getAll();
+            if (Array.isArray(response)) setPlans(response);
+            else if (Array.isArray(response?.content)) setPlans(response.content);
+            else if (Array.isArray(response?.data)) setPlans(response.data);
+            else setPlans([]);
+        } catch (err) {
+            console.error(err);
+            setPlans([]);
         }
-
-    }, []);
-
-
-    return (
-        <div className="w-full max-w-sm mx-auto">
-            {/* Brand */}
-            <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-900 text-white text-2xl font-black mb-4 shadow-xl">
-                    ₹
-                </div>
-                <h1 className="text-3xl font-black text-gray-900 tracking-tight">ChitConnect</h1>
-                <p className="text-gray-500 text-sm mt-1">Enter your registered mobile number</p>
-            </div>
-
-            <form
-                onSubmit={handleSubmit}
-                className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 space-y-5"
-            >
-                <div>
-                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">
-                        Mobile Number
-                    </label>
-                    <div
-                        className={`flex items-center border-2 rounded-2xl overflow-hidden transition-all ${error ? "border-red-300" : "border-gray-200 focus-within:border-gray-900"
-                            }`}
-                    >
-                        <span className="px-4 py-4 bg-gray-50 text-gray-500 text-sm font-mono border-r border-gray-200">
-                            +91
-                        </span>
-                        <input
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => { setPhone(e.target.value); setError(""); }}
-                            placeholder="98765 43210"
-                            maxLength={10}
-                            className="flex-1 px-4 py-4 text-gray-900 font-mono text-base outline-none bg-white placeholder-gray-300"
-                        />
-                    </div>
-                    {error && (
-                        <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
-                            <span>⚠</span> {error}
-                        </p>
-                    )}
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={loading || phone.replace(/\D/g, "").length < 10}
-                    className="w-full py-4 rounded-2xl bg-gray-900 text-white font-black text-sm tracking-wide transition-all hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                    {loading ? (
-                        <>
-                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Verifying…
-                        </>
-                    ) : (
-                        "Verify & Continue →"
-                    )}
-                </button>
-            </form>
-        </div>
-    );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   STEP 2 — PLAN SELECTION
-───────────────────────────────────────────────────────────────────────────── */
-function PlanSelectStep({ customer, onEnrolled, onSkip }) {
-    const [plans, setPlans] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [selected, setSelected] = useState(null);
-    const [enrolling, setEnrolling] = useState(false);
-    const [error, setError] = useState("");
+    };
 
     useEffect(() => {
-        (async () => {
-            try {
-                let data;
-                try { data = await chitPlanApi.getAvailable(); }
-                catch { data = await chitPlanApi.getAll(); }
-                const list = Array.isArray(data)
-                    ? data
-                    : Array.isArray(data?.content)
-                        ? data.content
-                        : [];
-                setPlans(list.filter((p) => p.status !== "INACTIVE" && p.status !== "CLOSED"));
-            } catch {
-                setPlans([]);
-            } finally {
-                setLoading(false);
-            }
-        })();
+        loadPlans();
     }, []);
 
+    // ─── Filtered list (client-side search for non-customer roles) ─────────────
+    const filteredCustomers = useMemo(() => {
+        // CUSTOMER role: already scoped to their own record from API
+        if (isCustomer) return customers;
+
+        const keyword = search.toLowerCase();
+        return customers.filter(
+            (c) =>
+                (c.fullName || "").toLowerCase().includes(keyword) ||
+                (c.username || "").toLowerCase().includes(keyword) ||
+                (c.email || "").toLowerCase().includes(keyword) ||
+                (c.phone || "").toLowerCase().includes(keyword) ||
+                (c.city || "").toLowerCase().includes(keyword)
+        );
+    }, [customers, search, isCustomer]);
+
+    // ─── Stats (scoped to visible data) ───────────────────────────────────────
+    const visibleCustomers = isCustomer
+        ? customers.filter((c) => c.id == userId)
+        : customers;
+
+    const totalActiveChits = visibleCustomers.reduce(
+        (sum, c) => sum + (c.activeChits || 0),
+        0
+    );
+    const totalAmountPaid = visibleCustomers.reduce(
+        (sum, c) => sum + (c.totalPaid || 0),
+        0
+    );
+    const totalPendingAmount = visibleCustomers.reduce(
+        (sum, c) => sum + (c.totalPending || 0),
+        0
+    );
+
+    // ─── Formatting helpers ────────────────────────────────────────────────────
+    const fmt = (v) => {
+        if (v == null) return "₹0.00";
+        return `₹${Number(v).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
+    };
+
+    const fmtCount = (v) =>
+        v == null ? "0" : Number(v).toLocaleString("en-IN");
+
+    function Skeleton({ className = "h-6 w-24" }) {
+        return <div className={`animate-pulse bg-gray-200 rounded ${className}`} />;
+    }
+
+    // ─── Form helpers ──────────────────────────────────────────────────────────
+    const resetForm = () => {
+        setForm({
+            fullName: "",
+            username: "",
+            password: "",
+            phone: "",
+            email: "",
+            address: "",
+            city: "",
+            role: "CUSTOMER",
+            active: true,
+        });
+        setEditingId(null);
+        setViewMode(false);
+    };
+
+    const openCreate = () => { resetForm(); setShowModal(true); };
+    const openEdit = (c) => { setForm(c); setEditingId(c.id); setViewMode(false); setShowModal(true); };
+    const openView = (c) => { setForm(c); setViewMode(true); setShowModal(true); };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            setSaving(true);
+            if (editingId) {
+                await customerApi.update(editingId, form);
+            } else {
+                await customerApi.create(form);
+            }
+            await loadCustomers();
+            setShowModal(false);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // ─── Enroll ────────────────────────────────────────────────────────────────
     const handleEnroll = async () => {
-        if (!selected) return;
-        setEnrolling(true);
-        setError("");
+        if (!selectedCustomer || !selectedPlan) return;
         try {
             await chitCollectionApi.enrollCustomer({
-                customerId: customer.id,
-                chitPlanId: selected.id,
+                customerId: selectedCustomer.id,
+                chitPlanId: selectedPlan,
             });
-            onEnrolled(selected);
-        } catch (err) {
-            setError(
-                err?.response?.data?.message ||
-                "Enrollment failed. You may already be enrolled or the plan is full."
-            );
-        } finally {
-            setEnrolling(false);
+            alert("Customer enrolled successfully");
+            setSelectedCustomer(null);
+            setSelectedPlan("");
+        } catch (error) {
+            console.error(error);
         }
     };
 
-    const PALETTES = [
-        { bg: "bg-violet-50", border: "border-violet-200", badge: "bg-violet-100 text-violet-700", ring: "ring-violet-400", dot: "bg-violet-500" },
-        { bg: "bg-amber-50", border: "border-amber-200", badge: "bg-amber-100 text-amber-700", ring: "ring-amber-400", dot: "bg-amber-500" },
-        { bg: "bg-cyan-50", border: "border-cyan-200", badge: "bg-cyan-100 text-cyan-700", ring: "ring-cyan-400", dot: "bg-cyan-500" },
-        { bg: "bg-rose-50", border: "border-rose-200", badge: "bg-rose-100 text-rose-700", ring: "ring-rose-400", dot: "bg-rose-500" },
-        { bg: "bg-emerald-50", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-700", ring: "ring-emerald-400", dot: "bg-emerald-500" },
+    // ─── Stats cards ───────────────────────────────────────────────────────────
+    const statsCards = [
+        {
+            title: isCustomer ? "My Profile" : "Total Customers",
+            value: loading ? null : isCustomer ? "1" : fmtCount(customers?.length),
+            sub: isCustomer ? "Your account" : "Count of total customers",
+            color: "text-blue-500",
+            bg: "bg-blue-50",
+            icon: (
+                <svg viewBox="0 0 24 24" className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <path d="M8 21h8M12 17v4" />
+                </svg>
+            ),
+        },
+        {
+            title: isCustomer ? "My Pending" : "Total Pending",
+            value: loading ? null : fmt(totalPendingAmount),
+            sub: "outstanding",
+            color: "text-pink-500",
+            bg: "bg-pink-50",
+            icon: (
+                <svg viewBox="0 0 24 24" className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                    <polyline points="16 7 22 7 22 13" />
+                </svg>
+            ),
+        },
+        {
+            title: isCustomer ? "My Total Paid" : "Total Paid",
+            value: loading ? null : fmt(totalAmountPaid),
+            sub: "collected",
+            color: "text-green-500",
+            bg: "bg-green-50",
+            icon: <BadgeIndianRupee className="w-5 h-5 text-green-500" />,
+        },
+        {
+            title: isCustomer ? "My Active Chits" : "Active Chits",
+            value: loading ? null : fmtCount(totalActiveChits),
+            sub: "Total active chits",
+            color: "text-green-500",
+            bg: "bg-green-50",
+            icon: (
+                <svg viewBox="0 0 24 24" className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                </svg>
+            ),
+        },
     ];
 
+    // ─── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="w-full max-w-2xl mx-auto">
-            {/* Customer chip */}
-            <div className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 mb-6">
-                <div className="w-10 h-10 rounded-full bg-gray-900 text-white flex items-center justify-center font-black text-sm flex-shrink-0">
-                    {initials(customer.fullName)}
-                </div>
-                <div>
-                    <p className="font-black text-gray-900 text-sm">{customer.fullName}</p>
-                    <p className="text-xs text-gray-400">{customer.phone}</p>
-                </div>
-                <button
-                    onClick={onSkip}
-                    className="ml-auto text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition"
-                >
-                    Skip, view my plans →
-                </button>
-            </div>
+        <div className="min-h-screen bg-gray-100 p-6">
+            <div className="max-w-7xl mx-auto space-y-6">
 
-            <h2 className="text-xl font-black text-gray-900 mb-1">Available Chit Plans</h2>
-            <p className="text-sm text-gray-400 mb-5">
-                Plans created by your agent. Tap to select and enroll.
-            </p>
+                {/* Header */}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex items-start justify-between">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (window.location.pathname.includes("/admin")) navigate("/admin/dashboard");
+                                else if (window.location.pathname.includes("/agent")) navigate("/agent/dashboard");
+                                else if (isCustomer) navigate("/customer/dashboard");
+                                else navigate("/login");
+                            }}
+                            className="mt-1 flex items-center justify-center p-2 m-2 border border-gray-200 bg-white hover:bg-gray-50 hover:text-indigo-600 text-gray-500 rounded-xl shadow-sm transition-colors"
+                            title="Go to Dashboard Home"
+                        >
+                            <span className="text-base leading-none">⬅️</span>
+                        </button>
 
-            {loading ? (
-                <div className="space-y-3">
-                    {[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-2xl bg-gray-100 animate-pulse" />)}
+                        <h1 className="text-3xl font-bold text-gray-900 px-4">
+                            {isCustomer ? "My Account" : "Customer Management"}
+                            <span>
+                                <p className="text-sm text-gray-400 mt-0.5">
+                                    {isCustomer
+                                        ? "View your chit details and payment history."
+                                        : "Manage customers, enrollments, collections and payments."}
+                                </p>
+                            </span>
+                        </h1>
+                    </div>
+
+                    {/* Only ADMIN can create customers */}
+                    {isAdmin && (
+                        <button
+                            onClick={openCreate}
+                            className="flex items-center gap-2 bg-black text-white px-5 py-3 rounded-2xl hover:opacity-90 transition"
+                        >
+                            <Plus size={18} />
+                            Create Customer
+                        </button>
+                    )}
                 </div>
-            ) : plans.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                    <p className="text-3xl mb-2">📋</p>
-                    <p className="font-bold text-gray-700">No plans available right now</p>
-                    <p className="text-sm text-gray-400 mt-1">Ask your agent to create a plan.</p>
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {plans.map((plan, i) => {
-                        const c = PALETTES[i % PALETTES.length];
-                        const isSelected = selected?.id === plan.id;
-                        return (
-                            <button
-                                key={plan.id}
-                                onClick={() => setSelected(isSelected ? null : plan)}
-                                className={`w-full text-left rounded-2xl border-2 p-5 transition-all duration-200 ${isSelected
-                                    ? `${c.bg} ${c.border} ring-2 ${c.ring} shadow-md`
-                                    : "bg-white border-gray-100 hover:border-gray-300 hover:shadow-sm"
-                                    }`}
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                                        <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? `border-transparent ${c.dot}` : "border-gray-300"}`}>
-                                            {isSelected && (
-                                                <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-                                                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-black text-gray-900 text-sm">{plan.planName}</p>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${c.badge}`}>
-                                                    {fmt(plan.totalValue || plan.chitAmount)}
-                                                </span>
-                                                {plan.duration && (
-                                                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-                                                        {plan.duration} months
-                                                    </span>
-                                                )}
-                                                {plan.monthlyInstallment && (
-                                                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-                                                        {fmt(plan.monthlyInstallment)}/mo
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">Total</p>
-                                        <p className="text-lg font-black text-gray-900">{fmt(plan.totalValue || plan.chitAmount)}</p>
-                                    </div>
+
+                {/* Stats Row */}
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                    {statsCards.map((card, i) => (
+                        <div key={i} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs text-gray-500 font-medium">{card.title}</span>
+                                <div className={`w-8 h-8 rounded-full ${card.bg} flex items-center justify-center`}>
+                                    {card.icon}
                                 </div>
-                                {plan.description && (
-                                    <p className="text-xs text-gray-400 mt-2 pl-8 line-clamp-2">{plan.description}</p>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-
-            {error && (
-                <div className="mt-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-2xl px-5 py-3 flex gap-2">
-                    <span>⚠</span> {error}
-                </div>
-            )}
-
-            <button
-                onClick={handleEnroll}
-                disabled={!selected || enrolling}
-                className="w-full mt-6 py-4 rounded-2xl bg-gray-900 text-white font-black text-sm tracking-wide transition-all hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-                {enrolling ? (
-                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Enrolling…</>
-                ) : selected ? (
-                    `Enroll in "${selected.planName}" →`
-                ) : (
-                    "Select a plan to enroll"
-                )}
-            </button>
-        </div>
-    );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   STEP 3 — DASHBOARD  (profile + plans + payment history)
-───────────────────────────────────────────────────────────────────────────── */
-function ProgressBar({ paid, total, color }) {
-    const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
-    return (
-        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
-        </div>
-    );
-}
-
-const ACCENTS = ["#7c3aed", "#059669", "#d97706", "#dc2626", "#0891b2"];
-
-function PlanCard({ plan, idx, isNew }) {
-    const accent = ACCENTS[idx % ACCENTS.length];
-    const paid = plan.amountPaid || 0;
-    const total = plan.totalValue || plan.chitAmount || 0;
-    const pending = Math.max(0, total - paid);
-
-    return (
-        <div className={`bg-white rounded-3xl border overflow-hidden shadow-sm ${isNew ? "ring-2 ring-emerald-400" : "border-gray-100"}`}>
-            <div className="h-1" style={{ backgroundColor: accent }} />
-            <div className="p-5">
-                {isNew && (
-                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-black px-3 py-1 rounded-full mb-3">
-                        ✓ Just Enrolled
-                    </span>
-                )}
-                <div className="flex items-start justify-between mb-4">
-                    <div>
-                        <h3 className="font-black text-gray-900">{plan.planName || `Plan #${plan.id}`}</h3>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                            {plan.enrollmentDate
-                                ? `Enrolled ${new Date(plan.enrollmentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`
-                                : plan.startDate
-                                    ? `Starts ${new Date(plan.startDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`
-                                    : "Active"}
-                        </p>
-                    </div>
-                    <span className="text-xs font-black px-3 py-1 rounded-full" style={{ background: `${accent}18`, color: accent }}>
-                        {plan.status || "Active"}
-                    </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                    {[
-                        { label: "Total", val: fmt(total), cls: "bg-gray-50 text-gray-900" },
-                        { label: "Paid", val: fmt(paid), cls: "bg-emerald-50 text-emerald-700" },
-                        { label: "Pending", val: fmt(pending), cls: "bg-red-50 text-red-600" },
-                    ].map((s) => (
-                        <div key={s.label} className={`${s.cls} rounded-xl p-3 text-center`}>
-                            <p className="text-[9px] uppercase tracking-widest opacity-60 mb-0.5">{s.label}</p>
-                            <p className="text-sm font-black">{s.val}</p>
-                        </div>
-                    ))}
-                </div>
-
-                {total > 0 && (
-                    <div className="mb-3">
-                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                            <span>Payment progress</span>
-                            <span>{((paid / total) * 100).toFixed(1)}%</span>
-                        </div>
-                        <ProgressBar paid={paid} total={total} color={accent} />
-                    </div>
-                )}
-
-                {(plan.totalInstallments || plan.duration) && (
-                    <div className="flex justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
-                        <span>Installments: <b className="text-gray-800">{plan.paidInstallments || 0} / {plan.totalInstallments || plan.duration}</b></span>
-                        {plan.monthlyInstallment && <span>EMI: <b className="text-gray-800">{fmt(plan.monthlyInstallment)}</b></span>}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function PaymentHistorySection({ customerId }) {
-    const [payments, setPayments] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        (async () => {
-            try {
-                // adjust endpoint to match your backend
-                const res = await api.get(`/payments/customer/${customerId}`);
-                const list = res.data?.data || res.data?.content || res.data || [];
-                setPayments(Array.isArray(list) ? list : []);
-            } catch {
-                setPayments([]);
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, [customerId]);
-
-    if (loading) return (
-        <div className="space-y-2">
-            {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-xl bg-gray-100 animate-pulse" />)}
-        </div>
-    );
-
-    if (payments.length === 0) return (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-            <p className="text-2xl mb-1">💳</p>
-            <p className="text-sm font-bold text-gray-600">No payment records yet</p>
-        </div>
-    );
-
-    return (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                        {["Date", "Plan", "Amount", "Status"].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-gray-400">{h}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {payments.map((p, i) => (
-                        <tr key={p.id || i} className="border-t border-gray-50 hover:bg-gray-50 transition">
-                            <td className="px-4 py-3 text-gray-500 text-xs">
-                                {p.paymentDate || p.createdAt
-                                    ? new Date(p.paymentDate || p.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
-                                    : "—"}
-                            </td>
-                            <td className="px-4 py-3 font-semibold text-gray-800">{p.planName || p.chitPlanName || "—"}</td>
-                            <td className="px-4 py-3 font-black text-gray-900">{fmt(p.amount || p.amountPaid)}</td>
-                            <td className="px-4 py-3">
-                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.status === "PAID" || p.status === "SUCCESS"
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : p.status === "PENDING"
-                                        ? "bg-amber-100 text-amber-700"
-                                        : "bg-gray-100 text-gray-600"
-                                    }`}>
-                                    {p.status || "Recorded"}
-                                </span>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-}
-
-function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
-    const [plans, setPlans] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [tab, setTab] = useState("plans"); // "plans" | "history" | "profile"
-
-    useEffect(() => {
-        (async () => {
-            try {
-                const detail = await customerApi.getById(customer.id);
-                const list =
-                    detail?.enrolledPlans ||
-                    detail?.chitPlans ||
-                    detail?.plans ||
-                    [];
-                setPlans(list);
-            } catch {
-                setPlans(newlyEnrolledPlan ? [newlyEnrolledPlan] : []);
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, [customer, newlyEnrolledPlan]);
-
-    const newId = newlyEnrolledPlan?.id;
-    const displayPlans = [
-        ...plans.filter((p) => p.id === newId || p.chitPlanId === newId),
-        ...plans.filter((p) => p.id !== newId && p.chitPlanId !== newId),
-    ];
-    const finalPlans = displayPlans.length > 0 ? displayPlans : newlyEnrolledPlan ? [newlyEnrolledPlan] : [];
-
-    const totalPaid = finalPlans.reduce((s, p) => s + (p.amountPaid || 0), 0);
-    const totalValue = finalPlans.reduce((s, p) => s + (p.totalValue || p.chitAmount || 0), 0);
-    const totalPending = Math.max(0, totalValue - totalPaid);
-
-    const TABS = [
-        { key: "plans", label: "My Plans", icon: "📋" },
-        { key: "history", label: "Payment History", icon: "💳" },
-        { key: "profile", label: "Profile", icon: "👤" },
-    ];
-
-    return (
-        <div className="w-full max-w-2xl mx-auto">
-            {/* Success banner */}
-            {newlyEnrolledPlan && (
-                <div className="bg-emerald-500 text-white rounded-2xl p-4 mb-5 flex items-center gap-3 shadow-lg shadow-emerald-100">
-                    <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg flex-shrink-0">✓</div>
-                    <div>
-                        <p className="font-black text-sm">Enrolled Successfully!</p>
-                        <p className="text-emerald-100 text-xs mt-0.5">
-                            You're now enrolled in <span className="font-bold text-white">{newlyEnrolledPlan.planName}</span>. Saved to your account.
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Header */}
-            <div className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 mb-5">
-                <div className="w-11 h-11 rounded-full bg-gray-900 text-white flex items-center justify-center font-black text-sm flex-shrink-0">
-                    {initials(customer.fullName)}
-                </div>
-                <div>
-                    <p className="font-black text-gray-900">{customer.fullName}</p>
-                    <p className="text-xs text-gray-400">{customer.phone} · {customer.city || "—"}</p>
-                </div>
-                <button
-                    onClick={onLogout}
-                    className="ml-auto text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 rounded-full px-3 py-1.5 transition"
-                >
-                    Sign out
-                </button>
-            </div>
-
-            {/* Summary stats */}
-            {!loading && finalPlans.length > 0 && (
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                    {[
-                        { label: "Plans", val: String(finalPlans.length), accent: "#6366f1" },
-                        { label: "Total Paid", val: fmt(totalPaid), accent: "#10b981" },
-                        { label: "Pending", val: fmt(totalPending), accent: "#ef4444" },
-                    ].map((s) => (
-                        <div key={s.label} className="bg-white rounded-2xl border p-4" style={{ borderColor: `${s.accent}30` }}>
-                            <p className="text-[9px] uppercase tracking-widest font-black mb-1" style={{ color: s.accent }}>{s.label}</p>
-                            <p className="text-lg font-black text-gray-900">{s.val}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Tabs */}
-            <div className="flex gap-1 bg-gray-100 rounded-2xl p-1 mb-5">
-                {TABS.map((t) => (
-                    <button
-                        key={t.key}
-                        onClick={() => setTab(t.key)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all ${tab === t.key
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                            }`}
-                    >
-                        <span>{t.icon}</span> {t.label}
-                    </button>
-                ))}
-            </div>
-
-            {/* Tab: My Plans */}
-            {tab === "plans" && (
-                loading ? (
-                    <div className="space-y-3">
-                        {[1, 2].map(i => <div key={i} className="h-40 rounded-3xl bg-gray-100 animate-pulse" />)}
-                    </div>
-                ) : finalPlans.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                        <p className="text-3xl mb-2">📋</p>
-                        <p className="font-bold text-gray-700">No plans enrolled yet</p>
-                        <p className="text-sm text-gray-400 mt-1">Contact your agent to get started.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {finalPlans.map((plan, i) => (
-                            <PlanCard
-                                key={plan.id || plan.chitPlanId || i}
-                                plan={plan}
-                                idx={i}
-                                isNew={plan.id === newId || plan.chitPlanId === newId}
-                            />
-                        ))}
-                    </div>
-                )
-            )}
-
-            {/* Tab: Payment History */}
-            {tab === "history" && <PaymentHistorySection customerId={customer.id} />}
-
-            {/* Tab: Profile */}
-            {tab === "profile" && (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">My Profile</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        {[
-                            { label: "Full Name", val: customer.fullName },
-                            { label: "Phone", val: customer.phone },
-                            { label: "Email", val: customer.email },
-                            { label: "City", val: customer.city },
-                        ].map((f) => (
-                            <div key={f.label}>
-                                <p className="text-xs text-gray-400 mb-0.5">{f.label}</p>
-                                <p className="font-bold text-gray-900">{f.val || "—"}</p>
                             </div>
-                        ))}
-                        {customer.address && (
-                            <div className="col-span-2">
-                                <p className="text-xs text-gray-400 mb-0.5">Address</p>
-                                <p className="font-bold text-gray-900">{customer.address}</p>
+                            <div className="text-xl font-bold text-gray-900">
+                                {card.value == null ? <Skeleton className="h-7 w-28" /> : card.value}
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                                <span className="text-xs text-gray-400">{card.sub}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Table Card */}
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-5 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        {/* Search — hide for CUSTOMER (they only see themselves) */}
+                        {!isCustomer && (
+                            <div className="relative w-full lg:w-96">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search customer..."
+                                    className="w-full border border-gray-200 rounded-2xl pl-11 pr-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                                />
                             </div>
                         )}
-                        <div>
-                            <p className="text-xs text-gray-400 mb-0.5">Account Status</p>
-                            <span className={`inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full ${customer.active ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${customer.active ? "bg-emerald-500" : "bg-red-500"}`} />
-                                {customer.active ? "Active" : "Inactive"}
-                            </span>
+                        {isCustomer && (
+                            <p className="text-sm text-gray-500 font-medium">Your Details</p>
+                        )}
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-4 text-left">Customer & ID</th>
+                                    <th className="px-6 py-4 text-left">Phone</th>
+                                    <th className="px-6 py-4 text-left">Active Chits</th>
+                                    <th className="px-6 py-4 text-left">Paid</th>
+                                    <th className="px-6 py-4 text-left">Pending</th>
+                                    <th className="px-6 py-4 text-left">Chit Group</th>
+                                    <th className="px-6 py-4 text-left">Total Value</th>
+                                    <th className="px-6 py-4 text-left">Amount Paid</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
+                                    {/* Enroll column hidden for CUSTOMER */}
+                                    {!isCustomer && (
+                                        <th className="px-6 py-4 text-center">Enroll</th>
+                                    )}
+                                    <th className="px-6 py-4 text-center">Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={isCustomer ? 10 : 11} className="text-center py-10 text-gray-500">
+                                            Loading...
+                                        </td>
+                                    </tr>
+                                ) : filteredCustomers.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={isCustomer ? 10 : 11} className="text-center py-10 text-gray-500">
+                                            No customers found.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredCustomers.map((c) => (
+                                        <tr
+                                            key={c.id}
+                                            className="border-t border-gray-100 hover:bg-gray-50 transition"
+                                        >
+                                            {/* Customer Name & ID */}
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-semibold text-blue-700">
+                                                        {initials(c.fullName)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold">{c.fullName}</p>
+                                                        <p className="text-xs text-gray-500">#Id: {c.id}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            <td className="px-4 py-4 text-gray-700">{c.phone}</td>
+
+                                            <td className="px-6 py-4">
+                                                <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-semibold">
+                                                    {c.activeChits}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-6 py-4">₹ {c.totalPaid}</td>
+
+                                            <td className="px-4 py-4">
+                                                ₹ {(c.totalPending || 0).toLocaleString("en-IN")}
+                                            </td>
+
+                                            <td className="px-6 py-4">{c.chitGroupName || "-"}</td>
+
+                                            <td className="px-6 py-4">
+                                                ₹ {(c.totalValue || 0).toLocaleString("en-IN")}
+                                            </td>
+
+                                            <td className="px-6 py-4">
+                                                ₹ {(c.amountPaid || 0).toLocaleString("en-IN")}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-center">
+                                                <span
+                                                    className={`px-3 py-1 rounded-full text-xs font-semibold ${c.active
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-red-100 text-red-700"
+                                                        }`}
+                                                >
+                                                    {c.active ? "Active" : "Inactive"}
+                                                </span>
+                                            </td>
+
+                                            {/* Enroll button — ADMIN/AGENT only */}
+                                            {!isCustomer && (
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center">
+                                                        <button
+                                                            onClick={() => setSelectedCustomer(c)}
+                                                            className="px-3 py-2 rounded-xl bg-black text-white text-sm"
+                                                        >
+                                                            Enroll
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            )}
+
+                                            {/* Actions menu */}
+                                            <td className="px-6 py-4 relative">
+                                                <button
+                                                    onClick={() =>
+                                                        setOpenMenu(openMenu === c.id ? null : c.id)
+                                                    }
+                                                    className="p-2 rounded-lg hover:bg-gray-100"
+                                                >
+                                                    ⋮
+                                                </button>
+
+                                                {openMenu === c.id && (
+                                                    <div className="absolute right-4 mt-2 w-44 bg-white border rounded-lg shadow-lg z-50">
+                                                        {/* View — everyone can view their own */}
+                                                        <button
+                                                            onClick={() => {
+                                                                openView(c);
+                                                                setOpenMenu(null);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                                                        >
+                                                            👁 View
+                                                        </button>
+
+                                                        {/* Edit — ADMIN only */}
+                                                        {isAdmin && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    openEdit(c);
+                                                                    setOpenMenu(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                                                            >
+                                                                ✏️ Edit
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination — hide for CUSTOMER (single record) */}
+                    {!isCustomer && (
+                        <div className="p-5 border-t border-gray-100 flex items-center justify-between">
+                            <button
+                                disabled={page === 0}
+                                onClick={() => setPage((prev) => prev - 1)}
+                                className="px-4 py-2 rounded-xl border border-gray-200 disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <p className="text-sm text-gray-500">
+                                Page {page + 1} of {totalPages}
+                            </p>
+                            <button
+                                disabled={page + 1 >= totalPages}
+                                onClick={() => setPage((prev) => prev + 1)}
+                                className="px-4 py-2 rounded-xl border border-gray-200 disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* ── Create / Edit / View Modal ───────────────────────────────────── */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900">
+                                    {viewMode ? "View Customer" : editingId ? "Edit Customer" : "Create Customer"}
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-1">Manage customer information.</p>
+                            </div>
+                            <button onClick={() => setShowModal(false)} className="p-2 rounded-xl hover:bg-gray-100">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {[
+                                    { label: "Full Name", key: "fullName", type: "text" },
+                                    { label: "Username", key: "username", type: "text" },
+                                    { label: "Password", key: "password", type: "password" },
+                                    { label: "Phone", key: "phone", type: "text" },
+                                    { label: "Email", key: "email", type: "email" },
+                                    { label: "City", key: "city", type: "text" },
+                                ].map(({ label, key, type }) => (
+                                    <div key={key}>
+                                        <label className="text-sm font-medium text-gray-700 block mb-2">{label}</label>
+                                        <input
+                                            type={type}
+                                            disabled={viewMode}
+                                            value={form[key] || ""}
+                                            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                                            className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black disabled:bg-gray-50"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* ROLE selector — only visible to ADMIN */}
+                            {isAdmin && (
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 block mb-2">ROLE</label>
+                                    <select
+                                        disabled={viewMode}
+                                        value={form.role}
+                                        onChange={(e) => setForm({ ...form, role: e.target.value })}
+                                        className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black disabled:bg-gray-50"
+                                    >
+                                        <option value="">Select Role</option>
+                                        <option value="CUSTOMER">CUSTOMER</option>
+                                        <option value="USER">USER</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 block mb-2">Address</label>
+                                <textarea
+                                    rows="4"
+                                    disabled={viewMode}
+                                    value={form.address || ""}
+                                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                                    className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black disabled:bg-gray-50"
+                                />
+                            </div>
+
+                            {/* Save/Cancel buttons — only for non-view and non-customer */}
+                            {!viewMode && isAdmin && (
+                                <div className="flex items-center justify-end gap-3 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        className="px-5 py-3 rounded-2xl border border-gray-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="px-5 py-3 rounded-2xl bg-black text-white disabled:opacity-50"
+                                    >
+                                        {saving ? "Saving..." : editingId ? "Update Customer" : "Create Customer"}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Close button for view mode */}
+                            {viewMode && (
+                                <div className="flex items-center justify-end pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        className="px-5 py-3 rounded-2xl border border-gray-200"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Enroll Modal — ADMIN/AGENT only ─────────────────────────────── */}
+            {!isCustomer && selectedCustomer && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900">Enroll Customer</h2>
+                                <p className="text-sm text-gray-500 mt-1">Assign chit plan to customer.</p>
+                            </div>
+                            <button onClick={() => setSelectedCustomer(null)} className="p-2 rounded-xl hover:bg-gray-100">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                                <p className="font-semibold text-gray-900">{selectedCustomer.fullName}</p>
+                                <p className="text-sm text-gray-500 mt-1">{selectedCustomer.phone}</p>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 block mb-2">
+                                    Select Chit Plan
+                                </label>
+                                <select
+                                    value={selectedPlan}
+                                    onChange={(e) => setSelectedPlan(e.target.value)}
+                                    className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                                >
+                                    <option value="">Choose Plan</option>
+                                    {Array.isArray(plans) &&
+                                        plans.map((plan) => (
+                                            <option key={plan.id} value={plan.id}>
+                                                {plan.planName} - ₹ {plan.totalValue}
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-2">
+                                <button
+                                    onClick={() => setSelectedCustomer(null)}
+                                    className="px-5 py-3 rounded-2xl border border-gray-200"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleEnroll}
+                                    className="px-5 py-3 rounded-2xl bg-black text-white"
+                                >
+                                    Enroll Customer
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
-    );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ROOT
-───────────────────────────────────────────────────────────────────────────── */
-export default function CustomerPortal() {
-    const [step, setStep] = useState(0);
-    const [customer, setCustomer] = useState(null);
-    const [enrolledPlan, setEnrolledPlan] = useState(null);
-
-    const handleVerified = (c) => { setCustomer(c); setStep(1); };
-    const handleEnrolled = (plan) => { setEnrolledPlan(plan); setStep(2); };
-    const handleSkip = () => setStep(2);
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        setCustomer(null);
-        setEnrolledPlan(null);
-        setStep(0);
-    };
-
-    return (
-        <div className="min-h-screen bg-[#f3f2ee] px-4 py-10">
-            <StepBar current={step} />
-            {step === 0 && <PhoneVerifyStep onVerified={handleVerified} />}
-            {step === 1 && <PlanSelectStep customer={customer} onEnrolled={handleEnrolled} onSkip={handleSkip} />}
-            {step === 2 && <Dashboard customer={customer} newlyEnrolledPlan={enrolledPlan} onLogout={handleLogout} />}
         </div>
     );
 }

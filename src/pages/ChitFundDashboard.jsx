@@ -4,11 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
 import { dashboardApi } from "../api/dashboardApi";
 import Sidebar from "../components/Sidebar";
-import CreateCustomer from "./CreateCustomer";
 import CollectPayment from "../payment/Payment";
 import RecordCollectionForm from "./RecordCollectionForm";
 import { customerApi } from "../api/customerApi";
-import CreateAgent from "./CreateAgent";
+
 
 
 
@@ -16,10 +15,9 @@ import CreateAgent from "./CreateAgent";
 const sidebarItems = [
   { label: "Dashboard", icon: "grid", path: "/admin/dashboard" },
   { label: "Customers", icon: "users", path: "/admin/dashboard/customers" },
-  { label: "Payment", icon: "credit-card", path: "/user/dashboard/collections/payment/{id}" },
-  { label: "Payments", icon: "credit-card", path: "/agent/dashboard/payment" },
   { label: "Chits", icon: "notebook", path: "/admin/dashboard/chits" },
   { label: "Collc-Tracker", icon: "credit-card", path: "/admin/dashboard/CollectionTracker" },
+  { label: "Payment", icon: "credit-card", path: "/user/dashboard/collections/payment/{id}" },
   { label: "Logout", icon: "logout", action: "logout" },
 ];
 
@@ -82,6 +80,7 @@ export default function ChitFundDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [customers, setCustomers] = useState([]);
 
   const chitData = [
     { name: "Gold Scheme A", start: "Started Jan 2026", progress: "5 / 20 mos", percent: 25, barColor: "bg-blue-500", nextDue: "₹5,000", dueNote: "Due in 3 days", dueColor: "text-orange-500", urgent: true },
@@ -109,6 +108,26 @@ export default function ChitFundDashboard() {
     }
   }, [isAdmin]);
 
+  useEffect(() => {
+    customerApi.getAll(0, 1000)
+      .then((res) => {
+        setCustomers(res.content || []);
+      });
+  }, []);
+
+
+  const fmtCount = (v) => {
+    if (v == null) return "0";
+    return Number(v).toLocaleString("en-IN");
+  };
+
+  const totalActiveChits = customers.reduce(
+    (sum, c) => sum + (c.activeChits || 0),
+    0
+  );
+
+
+
   const statsCards = [
     {
       title: "Total Collected",
@@ -127,13 +146,14 @@ export default function ChitFundDashboard() {
       icon: (<svg viewBox="0 0 24 24" className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>),
     },
     {
-      title: "Today's Collection",
-      value: loading ? null : fmt(data?.todayCollection),
-      sub: `${data?.todayPayments ?? 0} payments today`,
+      title: "Total Customers",
+      value: loading ? null : (customers?.length),
+      sub: "Total active chits",
       color: "text-green-500",
       bg: "bg-green-50",
       icon: (<svg viewBox="0 0 24 24" className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>),
     },
+
     {
       title: "Overdue Entries",
       value: loading ? null : String(data?.overdueEntries ?? 0),
@@ -157,14 +177,7 @@ export default function ChitFundDashboard() {
       icon: (<svg viewBox="0 0 24 24" className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>),
     },
 
-    {
-      title: "Current evaluation",
-      value: loading ? null : fmt(data?.totalPending),
-      sub: "outstanding",
-      color: "text-pink-500",
-      bg: "bg-pink-50",
-      icon: (<svg viewBox="0 0 24 24" className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>),
-    },
+
     {
       title: "Total Pending",
       value: loading ? null : fmt(data?.totalPending),
@@ -206,11 +219,11 @@ export default function ChitFundDashboard() {
 
 
   const getMenuItems = () => {
-    return ROLE_CONFIG[user?.role]?.sidebar || []; // Fallback to empty array
+    return ROLE_CONFIG[user?.role]?.sidebar || [];
   };
 
   const getStatsCards = () => {
-    return ROLE_CONFIG[user?.role]?.stats || []; // Fallback to empty array
+    return ROLE_CONFIG[user?.role]?.stats || [];
   };
 
   return (
@@ -275,11 +288,11 @@ export default function ChitFundDashboard() {
             <div className="flex gap-2">
               {user?.role === "ADMIN" ? (
                 <button
-                  onClick={() => navigate("/admin/dashboard/agent/create")}
+                  onClick={() => navigate("/admin/dashboard/customers")}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
-                  Add Agent
+                  Manage Customers
                 </button>
               ) : (
                 <button
@@ -322,12 +335,12 @@ export default function ChitFundDashboard() {
 
           {/* Bottom Section Layout */}
           {isAdmin ? (
-            /* ADMIN VIEWS: Recent Payments & Overdue Tracking */
+
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
                   <h2 className="text-sm font-semibold text-gray-800">Recent Payments</h2>
-                  <button onClick={() => navigate("/payment")} className="text-xs text-blue-500 hover:text-blue-700 font-medium">View All</button>
+                  <button onClick={() => navigate("/admin/dashboard/customers")} className="text-xs text-blue-500 hover:text-blue-700 font-medium">View All</button>
                 </div>
                 <table className="w-full">
                   <thead>
@@ -354,9 +367,10 @@ export default function ChitFundDashboard() {
                       recentPayments.map((p, i) => (
                         <tr key={i} className="border-t border-gray-50">
                           <td className="px-5 py-3.5">
-                            {/* SAFEGUARDED: Renders custom text if customer is unmapped */}
+
                             <div className="text-sm font-semibold text-gray-800">{p.customerName || "Not Mapped Customer"}</div>
                             <div className="text-[11px] text-gray-400 mt-0.5 font-mono">{p.receiptNumber}</div>
+                            <div className="text-[11px] text-gray-400 mt-0.5 font-mono">{p.customerPhone}</div>
                           </td>
                           <td className="px-3 py-3.5">
                             <div className="text-sm text-gray-600">{p.chitPlanName}</div>
@@ -366,7 +380,7 @@ export default function ChitFundDashboard() {
                             <div className="text-sm font-semibold text-green-600">{fmt(p.amountPaid)}</div>
                           </td>
                           <td className="px-3 py-3.5">
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                            <span className="text-xs bg-green-700 text-gray-100 px-2 py-0.5 rounded-full font-medium">
                               {p.paymentMode || "CASH"}
                             </span>
                           </td>
@@ -376,6 +390,8 @@ export default function ChitFundDashboard() {
                   </tbody>
                 </table>
               </div>
+
+
 
               <div className="flex flex-col gap-4">
                 <div className="bg-blue-600 rounded-xl p-4 text-white relative overflow-hidden">
@@ -413,7 +429,7 @@ export default function ChitFundDashboard() {
                             <svg viewBox="0 0 24 24" className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                           </div>
                           <div className="min-w-0">
-                            {/* SAFEGUARDED: Renders custom text if customer is unmapped */}
+
                             <div className="text-xs font-semibold text-gray-800">{o.customerName || "Not Mapped Customer"}</div>
                             <div className="text-[11px] text-gray-500 mt-0.5">{o.chitPlanName} – Month {o.monthNumber}</div>
                             <div className="text-[11px] text-red-600 font-semibold mt-0.5">{fmt(o.balanceAmount)} due</div>
@@ -426,7 +442,7 @@ export default function ChitFundDashboard() {
               </div>
             </div>
           ) : (
-            /* AGENT / CUSTOMER VIEWS: Active Chits Progress & Urgent Payments Panel */
+
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">

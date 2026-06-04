@@ -12,7 +12,7 @@ export const useFormMetadataLoader = (setCustomers, setPlans, setErrorMessage, s
 
             const [resCustomers, resPlans] = await Promise.all([
                 customerApi.getAll(),
-                chitPlanApi.getAllPlans(),
+                chitPlanApi.getAll(),
             ]);
 
             const processedCustomers = Array.isArray(resCustomers)
@@ -42,7 +42,7 @@ export default function ChitEnrollment() {
     const [customers, setCustomers] = useState([]);
     const [plans, setPlans] = useState([]);
 
-    // FIXED: Consolidated loading flags to prevent render locks
+
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -53,7 +53,7 @@ export default function ChitEnrollment() {
         enrollmentDate: new Date().toISOString().split("T")[0],
     });
 
-    // FIXED: Correctly tracking errors via setErrorMessage instead of setError
+
     const loadData = useFormMetadataLoader(setCustomers, setPlans, setErrorMessage, setLoading);
 
     useEffect(() => {
@@ -69,46 +69,62 @@ export default function ChitEnrollment() {
         }));
     };
 
-    const handleSubmit = async (e) => {
 
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
         setErrorMessage("");
 
-        if (!formData.customerId || !formData.planId || !formData.enrollmentDate) {
-            setErrorMessage("Please complete all mandatory parameters before parsing execution.");
+        if (
+            !formData.customerId ||
+            !formData.planId ||
+            !formData.enrollmentDate
+        ) {
+            setErrorMessage(
+                "Please complete all mandatory fields."
+            );
             return;
         }
 
         try {
             setSubmitting(true);
 
-            const finalPayload = {
-                customerId: formData.customerId,
+            const payload = {
+                customerId: Number(formData.customerId),
                 chitPlanId: Number(formData.planId),
-                enrollmentDate: formData.enrollmentDate
+                enrollmentDate: formData.enrollmentDate,
             };
 
-            await chitCollectionApi.enrollCustomer(finalPayload);
+            console.log("Enrollment Payload:", payload);
+
+            await chitCollectionApi.enrollCustomer(payload);
 
             alert("Customer successfully enrolled into Chit Scheme!");
-            navigate(-1);
+
+            // Reset form after success
+            setFormData({
+                customerId: "",
+                planId: "",
+                enrollmentDate: new Date()
+                    .toISOString()
+                    .split("T")[0],
+            });
+
         } catch (err) {
-            console.error("Submission layout exception caught:", err);
-            setErrorMessage(err.response?.data?.message || "Internal transmission network anomaly detected.");
+            console.error("Enrollment Error:", err);
+
+            setErrorMessage(
+                err?.response?.data?.message ||
+                "Customer enrollment failed."
+            );
         } finally {
             setSubmitting(false);
         }
-        {
-            errorMessage && (
-                <div className="bg-red-50 text-red-600 text-xs font-medium px-4 py-3 rounded-xl border border-red-100 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-                    {errorMessage} {/* Displays: "Customer is already enrolled in this chit plan" */}
-                </div>
-            )
-        }
     };
 
-    // FIXED: Corrected conditional evaluation variable to reference 'loading'
+
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 text-sm text-gray-500 font-sans">
@@ -123,7 +139,7 @@ export default function ChitEnrollment() {
 
                 {/* Header */}
                 <div>
-                    {/* Dynamic Navigation Home Button on Left Corner */}
+
                     <button
                         type="button"
                         onClick={() => {
@@ -149,7 +165,6 @@ export default function ChitEnrollment() {
                     </p>
                 </span>
 
-
                 {errorMessage && (
                     <div className="bg-red-50 text-red-600 text-xs font-medium px-4 py-3 rounded-xl border border-red-100 flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
@@ -169,12 +184,16 @@ export default function ChitEnrollment() {
                             value={formData.customerId}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-gray-700 bg-white"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
                         >
                             <option value="">-- Choose Profile --</option>
-                            {customers.map((c, index) => (
-                                <option key={c.id || `cust-${index}`} value={c.id || ""}>
-                                    {c.fullName || "Unnamed Profile"} ({c.customerCode || `ID: ${c.id}`})
+
+                            {customers.map((customer) => (
+                                <option
+                                    key={customer.id}
+                                    value={customer.id}
+                                >
+                                    {customer.fullName}
                                 </option>
                             ))}
                         </select>
@@ -187,31 +206,24 @@ export default function ChitEnrollment() {
                         </label>
                         <select
                             name="planId"
-                            value={formData.planId === "" || formData.planId === undefined ? "" : String(formData.planId)}
+                            value={formData.planId}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-gray-700 bg-white"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
                         >
-                            <option value="">-- Choose Scheme Value --</option>
-                            {plans.map((p, index) => {
-                                if (typeof p !== "object" || p === null) {
-                                    return (
-                                        <option key={p || index} value={p ? String(p) : ""}>
-                                            Chit Scheme Plan #{p}
-                                        </option>
-                                    );
-                                }
+                            <option value="">
+                                -- Choose Scheme Value --
+                            </option>
 
-                                const planId = p.id !== undefined ? p.id : index;
-                                const displayName = p.planName || p.groupName || p.name || `Plan Scheme #${planId}`;
-                                const displayAmount = p.totalAmount || p.amount || p.chitValue || 0;
-
-                                return (
-                                    <option key={planId} value={String(planId)}>
-                                        {displayName} — Max: ₹{displayAmount.toLocaleString("en-IN")}
-                                    </option>
-                                );
-                            })}
+                            {plans.map((plan) => (
+                                <option
+                                    key={plan.id}
+                                    value={plan.id}
+                                >
+                                    {plan.planName} - ₹
+                                    {Number(plan.totalAmount || 0).toLocaleString("en-IN")}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
@@ -254,3 +266,4 @@ export default function ChitEnrollment() {
 
     );
 }
+

@@ -6,6 +6,7 @@ import { paymentApi } from "../api/paymentApi";
 import { customerApi } from "../api/customerApi";
 import { chitCollectionApi } from "../api/chitCollectionApi";
 import { Phone } from "lucide-react";
+import { useAuth } from "../components/AuthContext";
 
 const PAYMENT_MODES = [
     {
@@ -121,6 +122,8 @@ export default function Payment() {
     const [searchLoading, setSearchLoading] = useState(false);
     const [err, setErr] = useState("");
 
+    const { user, logout, isAdmin } = useAuth();
+
     const requiresTxnId = paymentMode === "UPI" || paymentMode === "CHEQUE" || paymentMode === "ONLINE";
 
     const handleSearchCustomer = async (e) => {
@@ -184,11 +187,19 @@ export default function Payment() {
             {/* Top Nav */}
             <div className="bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between max-w-2xl mx-auto w-full">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate("/admin/dashboard")} className="text-gray-500 hover:text-gray-800 transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
+                    {isAdmin ? (
+                        <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate("/admin/dashboard")} className="text-gray-500 hover:text-gray-800 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    ) : (
+                        <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate("/user/dashboard")} className="text-gray-500 hover:text-gray-800 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    )}
                     <h1 className="text-base font-bold text-gray-900">Collect Payment</h1>
                 </div>
                 <div className="flex items-center gap-3">

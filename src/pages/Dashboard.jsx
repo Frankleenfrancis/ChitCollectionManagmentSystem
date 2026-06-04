@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
-
+import { chitPlanApi } from "../api/chitPlanApi";
+import { chitCollectionApi } from "../api/chitCollectionApi";
+import { customerApi } from "../api/customerApi";
+import CollectPayment from "../payment/Payment";
+import RecordCollectionForm from "./RecordCollectionForm";
 
 const sidebarItems = [
-    { label: "Dashboard", icon: "grid", path: "/dashboard" },
-    { label: "My Chits", icon: "list", path: "/user/dashboard/chits" },
+    { label: "Dashboard", icon: "grid", path: "/user/dashboard" },
+    { label: "My Chits", icon: "user", path: "/user/customer/dashboard" },
     { label: "Payment", icon: "credit-card", path: "/user/dashboard/collections/payment/{id}" },
-    { label: "Enroll_Trac", icon: "user", path: "/user/dashboard/enroll-trac" },
-    { label: "Customer", icon: "user", path: "/user/customer/dashboard" },
-
-    { label: "Profile", icon: "user", path: "/customer/dashboard/profile" },
     { label: "Settings", icon: "settings" },
     { label: "Logout", icon: "logout", action: "logout" },
 ];
@@ -158,7 +158,7 @@ const recentActivity = [
 
 
 
-// Icon components
+
 function Icon({ name, className = "w-5 h-5" }) {
     const icons = {
         grid: (
@@ -280,7 +280,7 @@ export default function ChitFundDashboard() {
                             <p className="text-sm text-gray-400 mt-0.5">Today is {new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
                         </div>
                         <button
-                            onClick={() => navigate("/user/dashboard/chits/myplan")}
+                            onClick={() => navigate("/user/customer/dashboard/")}
                             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
                             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5}>
                                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />

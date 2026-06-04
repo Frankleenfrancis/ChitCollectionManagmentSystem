@@ -4,99 +4,95 @@ import { authApi } from "../api/authApi";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+    // Load user from localStorage on page refresh
+    useEffect(() => {
+        try {
+            const savedUser = localStorage.getItem("user");
+            const token = localStorage.getItem("token");
 
-  // Load user from localStorage on refresh
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+            if (savedUser && token) {
+                setUser(JSON.parse(savedUser));
+            }
+        } catch (error) {
+            console.error("Failed to restore user:", error);
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
-    }
+    // Login
+    const login = async (username, password) => {
+        try {
+            setLoading(true);
 
-    setLoading(false);
-  }, []);
+            const response = await authApi.login(username, password);
+            const data = response?.data ?? response;
 
-  //LOGIN
-  const login = async (username, password) => {
-    setLoading(true);
+            const userData = {
+                userId: data.userId,
+                username: data.username,
+                fullName: data.fullName,
+                email: data.email,
+                phone: data.phone,
+                role: data.role,
+            };
 
-    try {
-      const res = await authApi.login(username, password);
-      const data = res?.data ?? res;
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(userData));
 
-      const token = data?.token;
+            setUser(userData);
 
-      const userData = {
-        userId: data?.userId,
-        username: data?.username,
-        fullName: data?.fullName,
-        email: data?.email,
-        phone: data?.phone,
-        role: data?.role,
-      };
+            return userData;
+        } catch (error) {
+            console.error("Login Error:", error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      if (!token || !userData.userId) {
-        throw new Error("Invalid login response");
-      }
+    // Logout
+    const logout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setUser(null);
+    };
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData));
+    const isAdmin = user?.role === "ADMIN";
+    const isAgent = user?.role === "AGENT";
+    const isCustomer = user?.role === "CUSTOMER";
+    const isUser = user?.role === "USER";
 
-      setUser(userData);
-
-      return userData;
-
-    } catch (err) {
-      console.error("Login failed:", err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // LOGOUT
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-  };
-
-  // ROLE HELPERS
-  const isAdmin = user?.role === "ADMIN";
-  const isAgent = user?.role === "AGENT";
-  const isCustomer = user?.role === "CUSTOMER";
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        setUser,
-        login,
-        logout,
-        loading,
-
-        // roles
-        isAdmin,
-        isAgent,
-        isCustomer,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider
+            value={{
+                user,
+                setUser,
+                login,
+                logout,
+                loading,
+                isAdmin,
+                isAgent,
+                isCustomer,
+                isUser,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
-
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+    const context = useContext(AuthContext);
 
-  if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider");
-  }
+    if (!context) {
+        throw new Error("useAuth must be used inside AuthProvider");
+    }
 
-  return context;
+    return context;
 };

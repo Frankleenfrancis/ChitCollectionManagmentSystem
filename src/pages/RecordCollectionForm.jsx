@@ -209,12 +209,16 @@ export default function RecordCollectionForm({ onSuccess, onBack }) {
                                 className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
                             >
                                 <option value="">— Select an enrollment —</option>
-                                {enrollments.map((enroll) => (
-                                    <option key={enroll.id} value={enroll.id}>
-                                        #{enroll.id} · {enroll.customerName} — {enroll.chitPlanName}
-                                        {enroll.paidMonths != null ? ` (Month ${enroll.paidMonths}/${enroll.totalMonths} paid)` : ""}
-                                    </option>
-                                ))}
+                                {[...enrollments]
+                                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                                    .map((enroll) => (
+                                        <option key={enroll.id} value={enroll.id}>
+                                            #{enroll.id} · {enroll.customerName} · {enroll.customerPhone} — {enroll.chitPlanName}
+                                            {enroll.paidMonths != null
+                                                ? ` (Month ${enroll.paidMonths}/${enroll.totalMonths} paid)`
+                                                : ""}
+                                        </option>
+                                    ))}
                             </select>
                         )}
                     </div>

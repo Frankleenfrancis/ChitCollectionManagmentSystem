@@ -37,28 +37,19 @@ function StepBar({ current }) {
                 return (
                     <div key={i} className="flex items-center">
                         <div className="flex flex-col items-center">
-                            <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300 ${done
-                                    ? "bg-emerald-500 text-white"
-                                    : active
-                                        ? "bg-gray-900 text-white ring-4 ring-gray-200"
-                                        : "bg-gray-200 text-gray-400"
-                                    }`}
-                            >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300 ${done ? "bg-emerald-500 text-white"
+                                : active ? "bg-gray-900 text-white ring-4 ring-gray-200"
+                                    : "bg-gray-200 text-gray-400"
+                                }`}>
                                 {done ? "✓" : i + 1}
                             </div>
-                            <span
-                                className={`text-[10px] mt-1 font-bold uppercase tracking-wider whitespace-nowrap ${active ? "text-gray-900" : done ? "text-emerald-500" : "text-gray-400"
-                                    }`}
-                            >
+                            <span className={`text-[10px] mt-1 font-bold uppercase tracking-wider whitespace-nowrap ${active ? "text-gray-900" : done ? "text-emerald-500" : "text-gray-400"
+                                }`}>
                                 {label}
                             </span>
                         </div>
                         {i < STEPS.length - 1 && (
-                            <div
-                                className={`w-16 h-0.5 mx-1 mb-4 transition-all duration-500 ${done ? "bg-emerald-400" : "bg-gray-200"
-                                    }`}
-                            />
+                            <div className={`w-16 h-0.5 mx-1 mb-4 transition-all duration-500 ${done ? "bg-emerald-400" : "bg-gray-200"}`} />
                         )}
                     </div>
                 );
@@ -69,86 +60,59 @@ function StepBar({ current }) {
 
 /* ─────────────────────────────────────────────────────────────────────────────
    STEP 1 — PHONE VERIFY
-   Calls POST /api/v1/auth/customer-login  { phone }
-   Backend returns: { data: { token, customer } }
 ───────────────────────────────────────────────────────────────────────────── */
 function PhoneVerifyStep({ onVerified }) {
     const [phone, setPhone] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // Restore session from localStorage
+    useEffect(() => {
+        const customerId = localStorage.getItem("customerId");
+        if (!customerId) return;
+        (async () => {
+            try {
+                const customer = await customerApi.getById(customerId);
+                if (customer?.id) onVerified(customer);
+                else localStorage.removeItem("customerId");
+            } catch {
+                localStorage.removeItem("customerId");
+            }
+        })();
+    }, []);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         const cleaned = phone.replace(/\D/g, "");
-
-        if (cleaned.length !== 10) {
-            setError("Enter valid mobile number");
-            return;
-        }
+        if (cleaned.length !== 10) { setError("Enter valid 10-digit mobile number"); return; }
 
         setLoading(true);
         setError("");
-
         try {
-
             const customer = await customerApi.getByPhone(cleaned);
-
-            if (!customer) {
-                throw new Error("Customer not found");
-            }
-
+            if (!customer?.id) throw new Error("Customer not found");
+            localStorage.setItem("customerId", customer.id);
             onVerified(customer);
-
         } catch (err) {
-
-            setError(
-                err?.response?.data?.message ||
-                "Customer not found"
-            );
-
+            setError(err?.response?.data?.message || "Customer not found with this number.");
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-
-        const customerId = localStorage.getItem("customerId");
-
-        if (customerId) {
-            loadCustomer(customerId);
-        }
-
-    }, []);
-
-
     return (
         <div className="w-full max-w-sm mx-auto">
-            {/* Brand */}
             <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-900 text-white text-2xl font-black mb-4 shadow-xl">
-                    ₹
-                </div>
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-900 text-white text-2xl font-black mb-4 shadow-xl">₹</div>
                 <h1 className="text-3xl font-black text-gray-900 tracking-tight">ChitConnect</h1>
                 <p className="text-gray-500 text-sm mt-1">Enter your registered mobile number</p>
             </div>
 
-            <form
-                onSubmit={handleSubmit}
-                className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 space-y-5"
-            >
+            <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 space-y-5">
                 <div>
-                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">
-                        Mobile Number
-                    </label>
-                    <div
-                        className={`flex items-center border-2 rounded-2xl overflow-hidden transition-all ${error ? "border-red-300" : "border-gray-200 focus-within:border-gray-900"
-                            }`}
-                    >
-                        <span className="px-4 py-4 bg-gray-50 text-gray-500 text-sm font-mono border-r border-gray-200">
-                            +91
-                        </span>
+                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Mobile Number</label>
+                    <div className={`flex items-center border-2 rounded-2xl overflow-hidden transition-all ${error ? "border-red-300" : "border-gray-200 focus-within:border-gray-900"}`}>
+                        <span className="px-4 py-4 bg-gray-50 text-gray-500 text-sm font-mono border-r border-gray-200">+91</span>
                         <input
                             type="tel"
                             value={phone}
@@ -158,11 +122,7 @@ function PhoneVerifyStep({ onVerified }) {
                             className="flex-1 px-4 py-4 text-gray-900 font-mono text-base outline-none bg-white placeholder-gray-300"
                         />
                     </div>
-                    {error && (
-                        <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
-                            <span>⚠</span> {error}
-                        </p>
-                    )}
+                    {error && <p className="text-xs text-red-500 mt-2 flex items-center gap-1"><span>⚠</span> {error}</p>}
                 </div>
 
                 <button
@@ -171,13 +131,8 @@ function PhoneVerifyStep({ onVerified }) {
                     className="w-full py-4 rounded-2xl bg-gray-900 text-white font-black text-sm tracking-wide transition-all hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading ? (
-                        <>
-                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Verifying…
-                        </>
-                    ) : (
-                        "Verify & Continue →"
-                    )}
+                        <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Verifying…</>
+                    ) : "Verify & Continue →"}
                 </button>
             </form>
         </div>
@@ -187,6 +142,14 @@ function PhoneVerifyStep({ onVerified }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    STEP 2 — PLAN SELECTION
 ───────────────────────────────────────────────────────────────────────────── */
+const PALETTES = [
+    { bg: "bg-violet-50", border: "border-violet-200", badge: "bg-violet-100 text-violet-700", ring: "ring-violet-400", dot: "bg-violet-500" },
+    { bg: "bg-amber-50", border: "border-amber-200", badge: "bg-amber-100 text-amber-700", ring: "ring-amber-400", dot: "bg-amber-500" },
+    { bg: "bg-cyan-50", border: "border-cyan-200", badge: "bg-cyan-100 text-cyan-700", ring: "ring-cyan-400", dot: "bg-cyan-500" },
+    { bg: "bg-rose-50", border: "border-rose-200", badge: "bg-rose-100 text-rose-700", ring: "ring-rose-400", dot: "bg-rose-500" },
+    { bg: "bg-emerald-50", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-700", ring: "ring-emerald-400", dot: "bg-emerald-500" },
+];
+
 function PlanSelectStep({ customer, onEnrolled, onSkip }) {
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -198,15 +161,25 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
         (async () => {
             try {
                 let data;
-                try { data = await chitPlanApi.getAvailable(); }
-                catch { data = await chitPlanApi.getAll(); }
+                try {
+                    data = await chitPlanApi.getAvailable();
+                } catch {
+                    data = await chitPlanApi.getAll(0, 100);
+                }
+
                 const list = Array.isArray(data)
                     ? data
                     : Array.isArray(data?.content)
                         ? data.content
-                        : [];
+                        : Array.isArray(data?.data)
+                            ? data.data
+                            : Array.isArray(data?.data?.content)
+                                ? data.data.content
+                                : [];
+
                 setPlans(list.filter((p) => p.status !== "INACTIVE" && p.status !== "CLOSED"));
-            } catch {
+            } catch (err) {
+                console.error("Plan fetch error:", err);
                 setPlans([]);
             } finally {
                 setLoading(false);
@@ -219,28 +192,14 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
         setEnrolling(true);
         setError("");
         try {
-            await chitCollectionApi.enrollCustomer({
-                customerId: customer.id,
-                chitPlanId: selected.id,
-            });
+            await chitCollectionApi.enrollCustomer({ customerId: customer.id, chitPlanId: selected.id });
             onEnrolled(selected);
         } catch (err) {
-            setError(
-                err?.response?.data?.message ||
-                "Enrollment failed. You may already be enrolled or the plan is full."
-            );
+            setError(err?.response?.data?.message || "Enrollment failed. You may already be enrolled or the plan is full.");
         } finally {
             setEnrolling(false);
         }
     };
-
-    const PALETTES = [
-        { bg: "bg-violet-50", border: "border-violet-200", badge: "bg-violet-100 text-violet-700", ring: "ring-violet-400", dot: "bg-violet-500" },
-        { bg: "bg-amber-50", border: "border-amber-200", badge: "bg-amber-100 text-amber-700", ring: "ring-amber-400", dot: "bg-amber-500" },
-        { bg: "bg-cyan-50", border: "border-cyan-200", badge: "bg-cyan-100 text-cyan-700", ring: "ring-cyan-400", dot: "bg-cyan-500" },
-        { bg: "bg-rose-50", border: "border-rose-200", badge: "bg-rose-100 text-rose-700", ring: "ring-rose-400", dot: "bg-rose-500" },
-        { bg: "bg-emerald-50", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-700", ring: "ring-emerald-400", dot: "bg-emerald-500" },
-    ];
 
     return (
         <div className="w-full max-w-2xl mx-auto">
@@ -253,18 +212,13 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
                     <p className="font-black text-gray-900 text-sm">{customer.fullName}</p>
                     <p className="text-xs text-gray-400">{customer.phone}</p>
                 </div>
-                <button
-                    onClick={onSkip}
-                    className="ml-auto text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition"
-                >
+                <button onClick={onSkip} className="ml-auto text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition">
                     Skip, view my plans →
                 </button>
             </div>
 
             <h2 className="text-xl font-black text-gray-900 mb-1">Available Chit Plans</h2>
-            <p className="text-sm text-gray-400 mb-5">
-                Plans created by your agent. Tap to select and enroll.
-            </p>
+            <p className="text-sm text-gray-400 mb-5">Plans created by your agent. Tap to select and enroll.</p>
 
             {loading ? (
                 <div className="space-y-3">
@@ -285,9 +239,7 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
                             <button
                                 key={plan.id}
                                 onClick={() => setSelected(isSelected ? null : plan)}
-                                className={`w-full text-left rounded-2xl border-2 p-5 transition-all duration-200 ${isSelected
-                                    ? `${c.bg} ${c.border} ring-2 ${c.ring} shadow-md`
-                                    : "bg-white border-gray-100 hover:border-gray-300 hover:shadow-sm"
+                                className={`w-full text-left rounded-2xl border-2 p-5 transition-all duration-200 ${isSelected ? `${c.bg} ${c.border} ring-2 ${c.ring} shadow-md` : "bg-white border-gray-100 hover:border-gray-300 hover:shadow-sm"
                                     }`}
                             >
                                 <div className="flex items-start justify-between gap-3">
@@ -303,7 +255,7 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
                                             <p className="font-black text-gray-900 text-sm">{plan.planName}</p>
                                             <div className="flex flex-wrap gap-2 mt-2">
                                                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${c.badge}`}>
-                                                    {fmt(plan.totalValue || plan.chitAmount)}
+                                                    {fmt(plan.totalAmount || plan.chitAmount)}
                                                 </span>
                                                 {plan.duration && (
                                                     <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
@@ -320,7 +272,7 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
                                     </div>
                                     <div className="text-right flex-shrink-0">
                                         <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">Total</p>
-                                        <p className="text-lg font-black text-gray-900">{fmt(plan.totalValue || plan.chitAmount)}</p>
+                                        <p className="text-lg font-black text-gray-900">{fmt(plan.totalAmount || plan.chitAmount)}</p>
                                     </div>
                                 </div>
                                 {plan.description && (
@@ -345,18 +297,14 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
             >
                 {enrolling ? (
                     <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Enrolling…</>
-                ) : selected ? (
-                    `Enroll in "${selected.planName}" →`
-                ) : (
-                    "Select a plan to enroll"
-                )}
+                ) : selected ? `Enroll in "${selected.planName}" →` : "Select a plan to enroll"}
             </button>
         </div>
     );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   STEP 3 — DASHBOARD  (profile + plans + payment history)
+   PLAN CARD
 ───────────────────────────────────────────────────────────────────────────── */
 function ProgressBar({ paid, total, color }) {
     const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
@@ -371,9 +319,14 @@ const ACCENTS = ["#7c3aed", "#059669", "#d97706", "#dc2626", "#0891b2"];
 
 function PlanCard({ plan, idx, isNew }) {
     const accent = ACCENTS[idx % ACCENTS.length];
-    const paid = plan.amountPaid || 0;
-    const total = plan.totalValue || plan.chitAmount || 0;
+
+    const planName = plan.planName || plan.chitPlanName || plan.chitPlan?.planName || `Plan #${plan.id}`;
+    const paid = plan.amountPaid || plan.totalPaid || plan.paidAmount || 0;
+    const total = plan.totalAmount || plan.chitAmount || plan.chitPlan?.totalValue || 0;
     const pending = Math.max(0, total - paid);
+    const status = plan.status || plan.enrollmentStatus || "Active";
+    const duration = plan.duration || plan.chitPlan?.duration;
+    const emi = plan.monthlyInstallment || plan.chitPlan?.monthlyInstallment;
 
     return (
         <div className={`bg-white rounded-3xl border overflow-hidden shadow-sm ${isNew ? "ring-2 ring-emerald-400" : "border-gray-100"}`}>
@@ -386,7 +339,7 @@ function PlanCard({ plan, idx, isNew }) {
                 )}
                 <div className="flex items-start justify-between mb-4">
                     <div>
-                        <h3 className="font-black text-gray-900">{plan.planName || `Plan #${plan.id}`}</h3>
+                        <h3 className="font-black text-gray-900">{planName}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">
                             {plan.enrollmentDate
                                 ? `Enrolled ${new Date(plan.enrollmentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`
@@ -396,7 +349,7 @@ function PlanCard({ plan, idx, isNew }) {
                         </p>
                     </div>
                     <span className="text-xs font-black px-3 py-1 rounded-full" style={{ background: `${accent}18`, color: accent }}>
-                        {plan.status || "Active"}
+                        {status}
                     </span>
                 </div>
 
@@ -423,10 +376,10 @@ function PlanCard({ plan, idx, isNew }) {
                     </div>
                 )}
 
-                {(plan.totalInstallments || plan.duration) && (
+                {(plan.totalInstallments || duration) && (
                     <div className="flex justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
-                        <span>Installments: <b className="text-gray-800">{plan.paidInstallments || 0} / {plan.totalInstallments || plan.duration}</b></span>
-                        {plan.monthlyInstallment && <span>EMI: <b className="text-gray-800">{fmt(plan.monthlyInstallment)}</b></span>}
+                        <span>Installments: <b className="text-gray-800">{plan.paidInstallments || 0} / {plan.totalInstallments || duration}</b></span>
+                        {emi && <span>EMI: <b className="text-gray-800">{fmt(emi)}</b></span>}
                     </div>
                 )}
             </div>
@@ -434,6 +387,9 @@ function PlanCard({ plan, idx, isNew }) {
     );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAYMENT HISTORY
+───────────────────────────────────────────────────────────────────────────── */
 function PaymentHistorySection({ customerId }) {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -441,11 +397,13 @@ function PaymentHistorySection({ customerId }) {
     useEffect(() => {
         (async () => {
             try {
-                // adjust endpoint to match your backend
                 const res = await api.get(`/payments/customer/${customerId}`);
-                const list = res.data?.data || res.data?.content || res.data || [];
-                setPayments(Array.isArray(list) ? list : []);
-            } catch {
+                console.log("Payments RAW:", res.data);
+                const page = res.data?.data;                          // Spring Page object
+                const data = page?.content ?? res.data?.content ?? res.data ?? [];
+                setPayments(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error("Payments error:", err.response?.status, err.response?.data);
                 setPayments([]);
             } finally {
                 setLoading(false);
@@ -487,10 +445,8 @@ function PaymentHistorySection({ customerId }) {
                             <td className="px-4 py-3 font-semibold text-gray-800">{p.planName || p.chitPlanName || "—"}</td>
                             <td className="px-4 py-3 font-black text-gray-900">{fmt(p.amount || p.amountPaid)}</td>
                             <td className="px-4 py-3">
-                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.status === "PAID" || p.status === "SUCCESS"
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : p.status === "PENDING"
-                                        ? "bg-amber-100 text-amber-700"
+                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.status === "PAID" || p.status === "SUCCESS" ? "bg-emerald-100 text-emerald-700"
+                                    : p.status === "PENDING" ? "bg-amber-100 text-amber-700"
                                         : "bg-gray-100 text-gray-600"
                                     }`}>
                                     {p.status || "Recorded"}
@@ -504,28 +460,38 @@ function PaymentHistorySection({ customerId }) {
     );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   DASHBOARD
+───────────────────────────────────────────────────────────────────────────── */
 function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [tab, setTab] = useState("plans"); // "plans" | "history" | "profile"
+    const [tab, setTab] = useState("plans");
 
     useEffect(() => {
         (async () => {
             try {
-                const detail = await customerApi.getById(customer.id);
-                const list =
-                    detail?.enrolledPlans ||
-                    detail?.chitPlans ||
-                    detail?.plans ||
-                    [];
+                // Fetch enrollments using the correct API
+                const enrollData = await chitCollectionApi.getEnrollmentsByCustomer(customer.id);
+                console.log("Enrollments RAW:", enrollData);
+
+                const list = Array.isArray(enrollData)
+                    ? enrollData
+                    : Array.isArray(enrollData?.content)
+                        ? enrollData.content
+                        : Array.isArray(enrollData?.data)
+                            ? enrollData.data
+                            : [];
+
                 setPlans(list);
-            } catch {
+            } catch (err) {
+                console.error("Dashboard load error:", err.response?.status, err.response?.data);
                 setPlans(newlyEnrolledPlan ? [newlyEnrolledPlan] : []);
             } finally {
                 setLoading(false);
             }
         })();
-    }, [customer, newlyEnrolledPlan]);
+    }, [customer.id, newlyEnrolledPlan]);
 
     const newId = newlyEnrolledPlan?.id;
     const displayPlans = [
@@ -534,8 +500,8 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
     ];
     const finalPlans = displayPlans.length > 0 ? displayPlans : newlyEnrolledPlan ? [newlyEnrolledPlan] : [];
 
-    const totalPaid = finalPlans.reduce((s, p) => s + (p.amountPaid || 0), 0);
-    const totalValue = finalPlans.reduce((s, p) => s + (p.totalValue || p.chitAmount || 0), 0);
+    const totalPaid = finalPlans.reduce((s, p) => s + (p.amountPaid || p.totalPaid || 0), 0);
+    const totalValue = finalPlans.reduce((s, p) => s + (p.totalAmount || p.chitAmount || p.chitPlan?.totalValue || 0), 0);
     const totalPending = Math.max(0, totalValue - totalPaid);
 
     const TABS = [
@@ -553,7 +519,7 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
                     <div>
                         <p className="font-black text-sm">Enrolled Successfully!</p>
                         <p className="text-emerald-100 text-xs mt-0.5">
-                            You're now enrolled in <span className="font-bold text-white">{newlyEnrolledPlan.planName}</span>. Saved to your account.
+                            You're now enrolled in <span className="font-bold text-white">{newlyEnrolledPlan.planName}</span>.
                         </p>
                     </div>
                 </div>
@@ -598,9 +564,7 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
                     <button
                         key={t.key}
                         onClick={() => setTab(t.key)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all ${tab === t.key
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all ${tab === t.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
                         <span>{t.icon}</span> {t.label}
@@ -685,7 +649,7 @@ export default function CustomerPortal() {
     const handleEnrolled = (plan) => { setEnrolledPlan(plan); setStep(2); };
     const handleSkip = () => setStep(2);
     const handleLogout = () => {
-        localStorage.removeItem("token");
+        localStorage.removeItem("customerId");
         setCustomer(null);
         setEnrolledPlan(null);
         setStep(0);

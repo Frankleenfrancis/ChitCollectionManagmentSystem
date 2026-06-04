@@ -40,9 +40,9 @@ export default function CustomerManagement() {
     const [form, setForm] = useState({
         fullName: "",
         username: "",
+        password: "",
         phone: "",
         email: "",
-        password: "",
         address: "",
         city: "",
         role: "CUSTOMER",
@@ -113,11 +113,12 @@ export default function CustomerManagement() {
             const payload = {
                 fullName: customer.fullName,
                 username: customer.username,
-                fullName: customer.phone,
                 password: customer.password,
+                Phone: customer.phone,
                 email: customer.email,
-                phone: customer.phone,
-                role: "USER",
+                address: customer.address,
+                city: customer.city,
+                role: "CUSTOMER",
             };
 
             await customerApi.createUserForCustomer(customer.id, payload);
@@ -158,14 +159,15 @@ export default function CustomerManagement() {
     );
 
     const totalAmountPaid = customers.reduce(
-        (sum, customer) => sum + (customer.amountPaid || 0), 0
-    )
-
-    const totalPendingAmount = customers.reduce(
-        (sum, customer) =>
-            sum + ((customer.totalAmount || 0) - (customer.amountPaid || 0)),
+        (sum, customer) => sum + (customer.totalPaid || 0),
         0
     );
+
+    const totalPendingAmount = customers.reduce(
+        (sum, customer) => sum + (customer.totalPending || 0),
+        0
+    );
+
 
     const fmt = (v, isCurrency = true) => {
         if (v == null) return isCurrency ? "₹0.00" : "0";
@@ -215,9 +217,9 @@ export default function CustomerManagement() {
         setForm({
             fullName: "",
             username: "",
+            password: "",
             phone: "",
             email: "",
-            password: "",
             address: "",
             city: "",
             active: true,
@@ -309,12 +311,14 @@ export default function CustomerManagement() {
         },
 
         {
-            title: "Total paid",
-            value: loading ? null : fmt(customers?.totalAmountPaid),
-            sub: "outstanding",
-            color: "text-pink-500",
-            bg: "bg-pink-50",
-            icon: (<svg viewBox="0 0 24 24" className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>),
+            title: "Total Paid",
+            value: loading ? null : fmt(totalAmountPaid),
+            sub: "collected",
+            color: "text-green-500",
+            bg: "bg-green-50",
+            icon: (
+                <BadgeIndianRupee className="w-5 h-5 text-green-500" />
+            ),
         },
         {
             title: "Active Chits",
@@ -643,6 +647,23 @@ export default function CustomerManagement() {
 
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 block mb-2">
+                                        Password
+                                    </label>
+
+                                    <input
+                                        type="password"
+                                        disabled={viewMode}
+                                        value={form.password}
+                                        onChange={(e) =>
+                                            setForm({ ...form, password: e.target.value })
+                                        }
+                                        className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                                    />
+                                </div>
+
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 block mb-2">
                                         Phone
                                     </label>
 
@@ -673,21 +694,7 @@ export default function CustomerManagement() {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 block mb-2">
-                                        Password
-                                    </label>
 
-                                    <input
-                                        type="password"
-                                        disabled={viewMode}
-                                        value={form.password}
-                                        onChange={(e) =>
-                                            setForm({ ...form, password: e.target.value })
-                                        }
-                                        className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black"
-                                    />
-                                </div>
 
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 block mb-2">
@@ -720,8 +727,6 @@ export default function CustomerManagement() {
                                     className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black"
                                 >
                                     <option value="">Select Role</option>
-                                    <option value="ADMIN">ADMIN</option>
-                                    <option value="AGENT">AGENT</option>
                                     <option value="CUSTOMER">CUSTOMER</option>
                                     <option value="USER">USER</option>
                                 </select>

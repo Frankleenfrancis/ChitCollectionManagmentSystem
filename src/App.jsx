@@ -3,9 +3,8 @@ import ProtectedRoute from "./roots/ProtectedRoute";
 import Unauthorized from "./pages/Unauthorized";
 import { AuthProvider } from "./components/AuthContext";
 
-import AgentDashboard from "./pages/AgentDashboard";
 import ChitFundDashboard from "./pages/ChitFundDashboard";
-import CreateAgent from "./pages/CreateAgent";
+
 import LoginPage from "./pages/LoginPage";
 import CreateChitPlan from "./pages/chitPlans/CreateChitPlan";
 import ChitPlanManagement from "./pages/ChitPlanManagement";
@@ -21,6 +20,7 @@ import EnrollmentTracker from "./pages/EnrollementTracker";
 // import Mychits from "./pages/Mychits";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import Payment from "./payment/Payment";
+import ChitEnrollCustomer from "./pages/ChitEnrollment";
 
 
 
@@ -82,6 +82,15 @@ function App() {
             }
           />
 
+          <Route
+            path="/admin/dashboard/payment"
+            element={
+              <ProtectedRoute allowedRoles={["CUSTOMER", "ADMIN"]}>
+                <ChitFundDashboard />
+              </ProtectedRoute>
+            }
+          />
+
 
           <Route
             path="/admin/dashboard/chits/view"
@@ -95,16 +104,25 @@ function App() {
           <Route
             path="/admin/dashboard/payment"
             element={
-              <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <ProtectedRoute allowedRoles={["ADMIN", "USER", "CUSTOMER"]}>
                 <CollectPayment />
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="/admin/dashboard/enrollment"
+            path="/user/dashboard/payment"
             element={
-              <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <ProtectedRoute allowedRoles={["ADMIN", "USER", "CUSTOMER"]}>
+                <CollectPayment />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/user/dashboard/enrollment"
+            element={
+              <ProtectedRoute allowedRoles={["CUSTOMER", "USER"]}>
                 <ChitEnrollment />
               </ProtectedRoute>
             }
@@ -119,14 +137,6 @@ function App() {
             }
           />
 
-          <Route
-            path="/admin/dashboard/agent"
-            element={
-              <ProtectedRoute allowedRoles={["ADMIN"]}>
-                <AgentDashboard />
-              </ProtectedRoute>
-            }
-          />
 
           <Route
             path="/user/dashboard"
@@ -146,24 +156,7 @@ function App() {
             }
           />
 
-          <Route
-            path="/admin/dashboard/agent/create"
-            element={
-              <ProtectedRoute allowedRoles={["ADMIN"]}>
-                <CreateAgent />
-              </ProtectedRoute>
-            }
-          />
 
-          {/* AGENT */}
-          <Route
-            path="/agent/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["AGENT"]}>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
 
           {/* CUSTOMER */}
           <Route
@@ -244,7 +237,7 @@ function App() {
           <Route
             path="/user/dashboard/collections/payment/:id"
             element={
-              <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+              <ProtectedRoute allowedRoles={["CUSTOMER", "ADMIN"]}>
                 <Payment />
               </ProtectedRoute>
             }
