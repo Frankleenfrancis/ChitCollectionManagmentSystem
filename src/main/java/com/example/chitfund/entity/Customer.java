@@ -28,9 +28,6 @@ public class Customer {
 
     private String email;
 
-    @Column(nullable = false)
-    private String password;
-
 
     @Column(columnDefinition = "TEXT")
     private String address;

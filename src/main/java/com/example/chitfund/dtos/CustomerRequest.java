@@ -9,8 +9,12 @@ import lombok.Data;
 @Data
 public class CustomerRequest {
 
+
     @NotBlank(message = "Full name is required")
     private String fullName;
+
+    @NotBlank(message = "user name is required")
+    private String username;
 
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "^[6-9]\\d{9}$", message = "Enter a valid 10-digit phone number")

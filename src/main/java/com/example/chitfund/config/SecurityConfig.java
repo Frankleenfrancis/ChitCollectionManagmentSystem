@@ -47,12 +47,12 @@ public class SecurityConfig {
 
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
-                                .requestMatchers("/api/v1/chit-plans/**").hasAnyRole("ADMIN", "AGENT")
+                                .requestMatchers("/api/v1/chit-plans/**").hasAnyRole("ADMIN", "AGENT" ,"CUSTOMER")
                                 .requestMatchers("/api/v1/customers/**").hasAnyRole("ADMIN", "AGENT", "USER", "CUSTOMER")
 
-                                .requestMatchers("/api/v1/enrollments/**").hasAnyRole("ADMIN", "AGENT")
-                                .requestMatchers("/api/v1/collections/**").hasAnyRole("ADMIN", "AGENT")
-                                .requestMatchers("/api/v1/payments/**").hasAnyRole("ADMIN", "AGENT")
+                                .requestMatchers("/api/v1/enrollments/**").hasAnyRole("ADMIN", "AGENT", "CUSTOMER")
+                                .requestMatchers("/api/v1/collections/**").hasAnyRole("ADMIN", "AGENT", "USER", "CUSTOMER")
+                                .requestMatchers("/api/v1/payments/**").hasAnyRole("ADMIN", "AGENT", "USER", "CUSTOMER")
 
                                 .anyRequest().authenticated()
 

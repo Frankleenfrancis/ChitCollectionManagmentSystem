@@ -56,7 +56,7 @@ public class CustomerController {
 
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'CUSTOMER')")
     public ResponseEntity<ApiResponse<CustomerResponse>> getCustomerById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success
                 (customerService.getCustomerById(id)));

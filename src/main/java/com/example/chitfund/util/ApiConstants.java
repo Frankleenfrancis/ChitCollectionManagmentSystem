@@ -18,6 +18,13 @@ public class ApiConstants {
     public static final String USER_NOT_FOUND =
             "User not found  : ";
 
+    public static final String ADMIN_NOT_FOUND=
+            "Admin not found  ;";
+
+    public static final String CUSTOMER_USER_NOT_FOUND=
+            "Customer user not found";
+
+
     public static final String PHONE_NUMBER_ALREADY_EXIST =
             "Phone number already registered: ";
 

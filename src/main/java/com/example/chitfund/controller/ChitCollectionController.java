@@ -29,7 +29,7 @@ public class ChitCollectionController {
 
 
     @PostMapping("/enrollments")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT' ,'CUSTOMER')")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> enrollCustomer(
             @Valid @RequestBody EnrollmentRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -40,14 +40,14 @@ public class ChitCollectionController {
 
 
     @GetMapping("/enrollments/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT','CUSTOMER')")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> getEnrollmentById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(chitCollectionService.getEnrollmentById(id)));
     }
 
 
     @GetMapping("/enrollments")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT' ,'CUSTOMER')")
     public ResponseEntity<ApiResponse<Page<EnrollmentResponse>>> getAllEnrollments(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -56,7 +56,7 @@ public class ChitCollectionController {
     }
 
     @GetMapping("/enrollments/customer/{customerId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT','CUSTOMER')")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getEnrollmentsByCustomer(
             @PathVariable Long customerId) {
         return ResponseEntity.ok(ApiResponse.success(
@@ -65,7 +65,7 @@ public class ChitCollectionController {
 
 
     @GetMapping("/enrollments/plan/{planId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT','CUSTOMER')")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getEnrollmentsByPlan(
             @PathVariable Long planId) {
         return ResponseEntity.ok(ApiResponse.success(
@@ -110,7 +110,7 @@ public class ChitCollectionController {
 
 
     @GetMapping("/collections/pending/customer/{customerId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'USER', 'CUSTOMER')")
     public ResponseEntity<ApiResponse<List<CollectionEntryResponse>>> getPendingCollections(
             @PathVariable Long customerId) {
         return ResponseEntity.ok(ApiResponse.success(

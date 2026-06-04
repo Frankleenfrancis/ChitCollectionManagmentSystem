@@ -47,31 +47,42 @@ public class CustomerServiceImpl implements CustomerService {
             throw new DuplicateDataException(ApiConstants.CUSTOMER_EMAIL_ALREADY_EXIST + request.getEmail());
         }
 
-        User createdBy = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException(ApiConstants.USER_NOT_FOUND + username));
+        // Create Login User
+        User customerUser = User.builder()
+                .fullName(request.getFullName())
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phone(request.getPhone())
+                .email(request.getEmail())
+                .role(Role.CUSTOMER)
+                .active(true)
+                .build();
 
+        customerUser = userRepository.save(customerUser);
 
-        ChitPlan plan = null;
-        if (request.getChitPlanId() != null) {
-            plan = chitPlanRepository.findById(request.getChitPlanId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Chit Plan not found with ID: " + request.getChitPlanId()));
-        }
-        // --------------------------------------------------------
+        User adminUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException(ApiConstants.ADMIN_NOT_FOUND + username));
+
 
         // 2. Build and save the baseline Customer entity
         Customer customer = Customer.builder()
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
                 .address(request.getAddress())
                 .city(request.getCity())
+                .user(customerUser)
                 .active(true)
-                .createdBy(createdBy)
+                .createdBy(adminUser)
                 .build();
 
         Customer saved = customerRepository.save(customer);
 
+        ChitPlan plan = null;
+        if (request.getChitPlanId() != null) {
+            plan = chitPlanRepository.findById(request.getChitPlanId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Chit Plan not found with ID: " + request.getChitPlanId()));
+        }
 
         if (plan != null) {
 
@@ -102,7 +113,6 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setFullName(request.getFullName());
         customer.setPhone(request.getPhone());
         customer.setEmail(request.getEmail());
-        customer.setPassword(passwordEncoder.encode(request.getPassword()));
         customer.setAddress(request.getAddress());
         customer.setCity(request.getCity());
 

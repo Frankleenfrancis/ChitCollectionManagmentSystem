@@ -23,7 +23,7 @@ public class DashboardController {
     private final CustomerService customerService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
     public ResponseEntity<ApiResponse<DashboardResponse>> getDashboard() {
         DashboardResponse report = dashboardService.getDashboardReport();
         return ResponseEntity.ok(ApiResponse.success("Dashboard report fetched successfully", report));

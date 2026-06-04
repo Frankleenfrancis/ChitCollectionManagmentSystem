@@ -81,7 +81,7 @@ public class ChitPlanController {
 
 
     @GetMapping("/available")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT' , 'CUSTOMER')")
     public ResponseEntity<ApiResponse<List<ChitPlanResponse>>> getAvailablePlans() {
         return ResponseEntity.ok(ApiResponse.success(chitPlanService.getAvailablePlans()));
     }

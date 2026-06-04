@@ -29,7 +29,7 @@ public class PaymentController {
 
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'USER', 'CUSTOMER')")
     public ResponseEntity<ApiResponse<PaymentReceiptResponse>> recordPayment(
             @Valid @RequestBody PaymentRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -55,7 +55,7 @@ public class PaymentController {
 
 
     @GetMapping("/customer/{customerId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT' ,'CUSTOMER')")
     public ResponseEntity<ApiResponse<Page<PaymentReceiptResponse>>> getPaymentsByCustomer(
             @PathVariable Long customerId,
             @RequestParam(defaultValue = "0") int page,
