@@ -80,7 +80,7 @@ public class ChitPlanServiceImpl implements ChitPlanService {
             throw new DuplicateDataException(ApiConstants.PLAN_NAME_ALREADY_EXIST + request.getPlanName());
         }
 
-        // Apply clean decimal precision formats before updating
+
         BigDecimal processedMonthlyAmount = request.getMonthlyAmount() != null ?
                 request.getMonthlyAmount().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
 
@@ -93,9 +93,9 @@ public class ChitPlanServiceImpl implements ChitPlanService {
         plan.setMonthlyAmount(processedMonthlyAmount);
         plan.setMaxMembers(request.getMaxMembers());
         plan.setDescription(request.getDescription());
-        plan.setUpdatedAt(LocalDateTime.now()); // Keep tracked instance timestamp fresh
+        plan.setUpdatedAt(LocalDateTime.now());
 
-        // FIXED: Recalculate the end date if the start date or duration has shifted
+
         if (plan.getStartDate() != null) {
             plan.setEndDate(plan.getStartDate().plusMonths(request.getDurationMonths()));
         }

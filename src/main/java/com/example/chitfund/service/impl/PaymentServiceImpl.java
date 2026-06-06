@@ -54,7 +54,7 @@ public class PaymentServiceImpl implements PaymentService {
         User recordedBy = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(ApiConstants.USER_NOT_FOUND+ username));
 
-        // Generate unique receipt number
+
         String receiptNumber = generateReceiptNumber();
         while (paymentRepository.existsByReceiptNumber(receiptNumber)) {
             receiptNumber = generateReceiptNumber();
@@ -70,7 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
                 ? PaymentStatus.PAID
                 : PaymentStatus.PARTIAL;
 
-        // Save payment record
+
         Payment payment = Payment.builder()
                 .receiptNumber(receiptNumber)
                 .collectionEntry(entry)
@@ -85,14 +85,14 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
         payment = paymentRepository.save(payment);
 
-        // Update collection entry
+
         entry.setPaidAmount(newPaidAmount);
         entry.setStatus(newStatus);
         entry.setPaymentDate(request.getPaymentDate());
         entry.setRemarks(request.getRemarks());
         collectionEntryRepository.save(entry);
 
-        // Update enrollment totals
+
         ChitEnrollment enrollment = entry.getEnrollment();
         BigDecimal updatedTotalPaid = enrollment.getTotalPaid().add(request.getAmountPaid());
         BigDecimal updatedPending = enrollment.getPendingAmount().subtract(request.getAmountPaid());
@@ -131,7 +131,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .collect(Collectors.toList());
     }
 
-    // ======================== PRIVATE HELPERS ========================
+
 
     private String generateReceiptNumber() {
         String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));

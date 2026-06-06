@@ -132,8 +132,10 @@ public class AuthServiceImpl implements AuthService {
 
 
 
-            customerRepository.save(customer);
+            Customer savedCustomer = customerRepository.save(customer);
 
+            savedUser.setCustomer(savedCustomer);
+            userRepository.save(savedUser);
 
         }
         return buildAuthResponse(user, jwtUtil.generateToken(user));
@@ -163,6 +165,7 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .role(user.getRole())
+                .customerId(user.getCustomer() != null ? user.getCustomer().getId() : null) //
                 .build();
     }
 }

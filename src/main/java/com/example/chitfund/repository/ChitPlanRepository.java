@@ -23,8 +23,6 @@ public interface ChitPlanRepository extends JpaRepository<ChitPlan, Long> {
 
     Page<ChitPlan> findByStatus(ChitStatus status, Pageable pageable);
 
-
-
     @Query("SELECT COUNT(p) FROM ChitPlan p WHERE p.status = 'ACTIVE'")
     Long countActivePlans();
 

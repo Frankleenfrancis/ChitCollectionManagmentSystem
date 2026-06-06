@@ -197,7 +197,6 @@ public class CustomerServiceImpl implements CustomerService {
             var activeEnrollment = customer.getEnrollments().stream()
                     .filter(e -> e.getStatus().name().equals("ACTIVE"))
                     .findFirst()
-                    // Fallback to first enrollment if none are explicitly tagged "ACTIVE"
                     .orElse(customer.getEnrollments().get(0));
 
             if (activeEnrollment != null && activeEnrollment.getChitPlan() != null) {
