@@ -8,7 +8,7 @@ export default function EditCustomer() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // 1. Instantly check if data was passed down via router state context
+
     const preloadedCustomer = location.state?.customerData;
 
     const [form, setForm] = useState({
@@ -23,10 +23,9 @@ export default function EditCustomer() {
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    // 2. Populate form fields on mount
     useEffect(() => {
         if (preloadedCustomer) {
-            // State data exists! Populate form fields immediately.
+
             setForm({
                 fullName: preloadedCustomer.fullName || "",
                 phone: preloadedCustomer.phone || "",
@@ -37,8 +36,7 @@ export default function EditCustomer() {
                 status: preloadedCustomer.status || "Up-to-date"
             });
         } else if (id) {
-            // Fallback: User refreshed the page directly on this URL. 
-            // Fetch fresh records directly from the database matching the path param ID.
+
             const fetchFreshData = async () => {
                 try {
                     setLoading(true);
@@ -65,12 +63,11 @@ export default function EditCustomer() {
         }
     }, [id, preloadedCustomer]);
 
-    // Handle Form submission routing changes to backend mapping
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
 
-        // Explicitly construct the exact body data structure your Java CustomerRequest DTO looks for
         const customerRequestPayload = {
             fullName: form.fullName,
             phone: form.phone,
@@ -80,13 +77,13 @@ export default function EditCustomer() {
         };
 
         try {
-            // Send this clean payload to the API
+
             await customerApi.update(id, customerRequestPayload);
             toast.success("Customer profile updated successfully");
             navigate(-1);
         } catch (err) {
             console.error("Form transmission errors:", err);
-            // This will capture validation messages like DuplicateDataException thrown by your backend
+
             toast.error(err.response?.data?.message || "Failed to submit updates.");
         } finally {
             setSubmitting(false);
@@ -110,9 +107,9 @@ export default function EditCustomer() {
         <div className="min-h-screen bg-gray-50 p-6 font-sans">
             <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
 
-                {/* Screen Header Banner */}
+
                 <div className="border-b pb-4 mb-6">
-                    <h1 className="text-xl font-bold text-gray-900">✏️ Edit Customer Profile</h1>
+                    <h1 className="text-xl font-bold text-gray-900"> Edit Customer Profile</h1>
                     <p className="text-xs text-gray-400 mt-1">
                         Updating record unique identifier: <span className="font-mono text-indigo-600 font-bold">#{id}</span>
                     </p>
@@ -205,7 +202,7 @@ export default function EditCustomer() {
                         />
                     </div>
 
-                    {/* Action Footers */}
+
                     <div className="flex gap-3 pt-4 border-t mt-6">
                         <button
                             type="button"

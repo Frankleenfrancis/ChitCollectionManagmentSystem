@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { chitCollectionApi } from "../api/chitCollectionApi";
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+
 const today = () => new Date().toISOString().split("T")[0];
 
 const fmt = (n) =>
@@ -10,36 +10,27 @@ const fmt = (n) =>
         maximumFractionDigits: 2,
     });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RecordCollectionForm
-//
-// Purpose: After a customer is enrolled in a chit plan, this form creates
-//          a monthly collection entry (POST /collections) so that the
-//          payment screen can find it via GET /collections/pending/customer/{id}
-//
-// Backend payload: { enrollmentId, monthNumber, dueDate, dueAmount, remarks }
-// ─────────────────────────────────────────────────────────────────────────────
 export default function RecordCollectionForm({ onSuccess, onBack }) {
-    // ── enrollments list ──
+
 
     const [enrollments, setEnrollments] = useState([]);
     const [enrollmentsLoading, setEnrollmentsLoading] = useState(true);
 
-    // ── selected enrollment ──
+
     const [selectedId, setSelectedId] = useState("");
     const [activeEnrollment, setActiveEnrollment] = useState(null);
 
-    // ── form fields — matches backend CollectionEntryRequest exactly ──
+
     const [monthNumber, setMonthNumber] = useState("");
     const [dueDate, setDueDate] = useState(today());
     const [dueAmount, setDueAmount] = useState("");
     const [remarks, setRemarks] = useState("");
 
-    // ── ui state ──
-    const [submitting, setSubmitting] = useState(false);
-    const [toast, setToast] = useState(null); // { text, type }
 
-    // ── load all enrollments on mount ──
+    const [submitting, setSubmitting] = useState(false);
+    const [toast, setToast] = useState(null);
+
+
     useEffect(() => {
         (async () => {
             try {
@@ -56,7 +47,7 @@ export default function RecordCollectionForm({ onSuccess, onBack }) {
         })();
     }, []);
 
-    // ── when user picks an enrollment, pre-fill sensible defaults ──
+
     const handleSelect = (id) => {
         setSelectedId(id);
         setToast(null);
@@ -72,17 +63,17 @@ export default function RecordCollectionForm({ onSuccess, onBack }) {
 
         setActiveEnrollment(enroll);
 
-        // pre-fill month: next unpaid month = paidMonths + 1
+
         const nextMonth = (enroll.paidMonths ?? 0) + 1;
         setMonthNumber(String(nextMonth));
 
-        // pre-fill due amount from plan's monthly amount
+
         setDueAmount(String(enroll.monthlyAmount ?? enroll.chitPlan?.monthlyAmount ?? ""));
 
-        // pre-fill due date = today
+
         setDueDate(today());
 
-        // pre-fill remarks
+
         setRemarks(`Month ${nextMonth} collection entry`);
     };
 
@@ -98,7 +89,7 @@ export default function RecordCollectionForm({ onSuccess, onBack }) {
         setTimeout(() => setToast(null), 4000);
     };
 
-    // ── submit → POST /collections ──
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!activeEnrollment) return;
@@ -106,7 +97,7 @@ export default function RecordCollectionForm({ onSuccess, onBack }) {
         setSubmitting(true);
         setToast(null);
 
-        // Exact fields backend expects — nothing extra
+
         const payload = {
             enrollmentId: Number(selectedId),
             monthNumber: Number(monthNumber),
@@ -123,7 +114,7 @@ export default function RecordCollectionForm({ onSuccess, onBack }) {
             );
 
 
-            // move to next month automatically
+
             const nextMonth = Number(monthNumber) + 1;
             if (nextMonth <= (activeEnrollment.totalMonths ?? activeEnrollment.durationMonths ?? 99)) {
                 setMonthNumber(String(nextMonth));
@@ -149,9 +140,7 @@ export default function RecordCollectionForm({ onSuccess, onBack }) {
         }
     };
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Render
-    // ─────────────────────────────────────────────────────────────────────────
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
 

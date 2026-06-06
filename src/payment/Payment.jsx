@@ -134,7 +134,7 @@ export default function Payment() {
         try {
             const c = await customerApi.getByPhone(phoneSearch.trim());
             setCustomer(c);
-            // load pending collection entries
+
             const entries = await chitCollectionApi.getPendingCollections(c.id);
             setPendingEntries(entries);
             setStep(2);
@@ -219,7 +219,7 @@ export default function Payment() {
                     </div>
                 )}
 
-                {/* STEP 1: Find Customer */}
+                {/*Customer */}
                 {step === 1 && (
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-6 space-y-5">
                         <div>
@@ -253,7 +253,7 @@ export default function Payment() {
                     </div>
                 )}
 
-                {/* STEP 2: Select Pending Entry */}
+                {/* Pending Entry */}
                 {step === 2 && customer && (
                     <>
                         {/* Customer Card */}
@@ -302,7 +302,7 @@ export default function Payment() {
                     </>
                 )}
 
-                {/* STEP 3: Payment Form */}
+                {/* Payment Form */}
                 {step === 3 && selectedEntry && customer && (
                     <>
                         {/* Customer Card */}
@@ -336,7 +336,7 @@ export default function Payment() {
                                 })}
                             </div>
 
-                            {/* Amount */}
+                       
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Amount to Collect (₹)</label>
                                 <input
@@ -350,7 +350,7 @@ export default function Payment() {
                                 <p className="text-xs text-gray-400 mt-1">Max: {fmt(selectedEntry.balanceAmount)}</p>
                             </div>
 
-                            {/* Payment Date */}
+                      
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Payment Date</label>
                                 <input
@@ -361,7 +361,6 @@ export default function Payment() {
                                 />
                             </div>
 
-                            {/* Transaction ID */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                                     Transaction ID / Reference Number
@@ -376,7 +375,7 @@ export default function Payment() {
                                 />
                             </div>
 
-                            {/* Notes */}
+                   
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Notes</label>
                                 <textarea
@@ -388,7 +387,7 @@ export default function Payment() {
                                 />
                             </div>
 
-                            {/* Summary */}
+               
                             <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-4 space-y-2">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Collection Summary</p>
                                 <div className="flex justify-between text-sm text-gray-600">
@@ -412,7 +411,7 @@ export default function Payment() {
                             </div>
                         </div>
 
-                        {/* Actions */}
+           
                         <div className="space-y-3 pb-6">
                             <button
                                 onClick={handleConfirm}

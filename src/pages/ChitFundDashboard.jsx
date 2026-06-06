@@ -87,7 +87,7 @@ export default function ChitFundDashboard() {
     { name: "Mega Chit Group 5", start: "Started Mar 2025", progress: "14 / 30 mos", percent: 46, barColor: "bg-indigo-500", nextDue: "₹10,000", dueNote: "Paid", dueColor: "text-green-500", urgent: false },
   ];
 
-  //logout
+
   const handleLogout = () => {
 
     localStorage.removeItem("token");
@@ -400,7 +400,7 @@ export default function ChitFundDashboard() {
                     {loading ? <Skeleton className="h-9 w-32 bg-blue-400" /> : fmt(data?.monthlyCollection)}
                   </div>
                   <div className="text-xs text-blue-300 mb-4">{data?.totalCustomers ?? 0} active customers</div>
-                  <button onClick={() => navigate("/payment")} className="w-full bg-white text-blue-600 text-sm font-semibold py-2 rounded-lg hover:bg-blue-50 transition-colors">
+                  <button onClick={() => navigate("/admin/dashboard/CollectionTracker")} className="w-full bg-white text-blue-600 text-sm font-semibold py-2 rounded-lg hover:bg-blue-50 transition-colors">
                     Record Payment
                   </button>
                 </div>

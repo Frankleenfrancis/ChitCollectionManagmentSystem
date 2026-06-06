@@ -6,7 +6,7 @@ import EditChitPlan from "../components/EditChitPlan";
 import { useAuth } from "../components/AuthContext";
 
 
-// Status Badge specific to Chit Plans (Active, Completed, Upcoming)
+
 function PlanStatusBadge({ status }) {
     let styles = "bg-green-50 text-green-600";
     let dotStyles = "bg-green-500";
@@ -27,7 +27,7 @@ function PlanStatusBadge({ status }) {
     );
 }
 
-// Progress Bar tracking the Months/Duration completion percentage
+
 function DurationProgressBar({ value }) {
     const color =
         value >= 80
@@ -113,7 +113,7 @@ function ActionMenu({ isOpen, onToggle, onEdit, onDelete }) {
     );
 }
 
-// Quick display code helper (e.g., Plan Name -> PL)
+
 const planInitials = (title) =>
     title?.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "CP";
 
@@ -127,20 +127,20 @@ export default function ChitPlanManagement() {
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
 
-    // Updated Chit Plan Filters
+
     const [durationFilter, setDurationFilter] = useState("All Durations");
     const [statusFilter, setStatusFilter] = useState("All Statuses");
-    const [typeFilter, setTypeFilter] = useState("All Types"); // For Premium, Normal, Budget variations
+    const [typeFilter, setTypeFilter] = useState("All Types");
     const [page, setPage] = useState(1);
     const [activeMenuId, setActiveMenuId] = useState(null);
 
     const navigate = useNavigate();
 
     const { user } = useAuth();
-    const userRole = user?.role?.toUpperCase(); // Force Uppercase to prevent casing bugs
+    const userRole = user?.role?.toUpperCase();
     const isAdmin = userRole === "ADMIN";
 
-    // --- Dynamic Stats Calculations for Chit Plans (Mapped to Backend Variables) ---
+
     const totalPlansCount = totalElements || plans.length || 0;
 
     const activeChitsValue = plans
@@ -183,7 +183,7 @@ export default function ChitPlanManagement() {
         }
     ];
 
-    // --- Search Debounce Effect ---
+
     useEffect(() => {
         const t = setTimeout(() => {
             setDebouncedSearch(search);
@@ -243,7 +243,7 @@ export default function ChitPlanManagement() {
 
         setActiveMenuId(null);
 
-        // Determine path prefix based on the user's role
+
         if (userRole === "ADMIN") {
             navigate(`/admin/dashboard/chits/edit/${targetId}`, {
                 state: { planData: plan }
@@ -290,7 +290,7 @@ export default function ChitPlanManagement() {
         }
     };
 
-    // --- Client Side Matrix Filtering ---
+
     const filtered = plans.filter((p) => {
         const matchSearch =
             p.planName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -315,10 +315,10 @@ export default function ChitPlanManagement() {
         <div className="min-h-screen bg-gray-50 font-sans p-6">
             <div className="max-w-6xl mx-auto space-y-6">
 
-                {/* Header Section */}
+
                 <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                        {/* Dynamic Navigation Home Button on Left Corner */}
+
                         <button
                             type="button"
                             onClick={() => {
@@ -352,18 +352,15 @@ export default function ChitPlanManagement() {
                             <span className="text-lg leading-none">+</span>
                             Create New Plan
                         </button>
-                        {/* 
-                        <button className="flex items-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-colors">
-                            Export Configuration
-                        </button> */}
+
                     </div>
                 </div>
 
 
-                {/* Filter Matrix Controls */}
+
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Search Bar Input */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                 Search Plan Profile
@@ -382,7 +379,7 @@ export default function ChitPlanManagement() {
                             </div>
                         </div>
 
-                        {/* Duration Options */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                 Duration Cycle
@@ -401,7 +398,7 @@ export default function ChitPlanManagement() {
                             </select>
                         </div>
 
-                        {/* Status Sorting */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                 Lifecycle Status
@@ -418,7 +415,7 @@ export default function ChitPlanManagement() {
                             </select>
                         </div>
 
-                        {/* Plan Category Type Selector */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                 Scheme Tier Type
@@ -437,7 +434,7 @@ export default function ChitPlanManagement() {
                     </div>
                 </div>
 
-                {/* Primary Structured Content Data Table */}
+
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -479,7 +476,7 @@ export default function ChitPlanManagement() {
                                     </tr>
                                 ) : filtered.length > 0 ? (
                                     filtered.map((p, idx) => {
-                                        // Calculate percentage progress using backend durationMonths
+
                                         const progressPercentage =
                                             p.durationMonths && p.currentMonthRun
                                                 ? Math.round((p.currentMonthRun / p.durationMonths) * 100)
@@ -505,7 +502,7 @@ export default function ChitPlanManagement() {
                                                     </div>
                                                 </td>
 
-                                                {/* Scheme Category Mapping */}
+
                                                 <td className="px-6 py-4 text-sm text-gray-600">
                                                     {p.planType || "Regular"} ({p.durationMonths} Months)
                                                 </td>
@@ -515,12 +512,12 @@ export default function ChitPlanManagement() {
                                                     ₹{(p.totalAmount || 0).toLocaleString('en-IN')}
                                                 </td>
 
-                                                {/* Monthly Premium Installment Mapping */}
+
                                                 <td className="px-6 py-4 text-sm font-semibold text-indigo-600 text-right">
                                                     ₹{(p.monthlyAmount || 0).toLocaleString('en-IN')}
                                                 </td>
 
-                                                {/* Cycle Progress & Capacity */}
+
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col gap-0.5">
                                                         <DurationProgressBar value={progressPercentage || p.hardcodedProgress || 0} />
@@ -558,7 +555,7 @@ export default function ChitPlanManagement() {
                         </table>
                     </div>
 
-                    {/* Pagination Context Element Footer */}
+
                     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/30">
                         <p className="text-sm text-gray-400">
                             Showing {filtered.length} plans
@@ -598,7 +595,7 @@ export default function ChitPlanManagement() {
                     </div>
                 </div>
 
-                {/* Banner Summary Matrix Status Footprint Area */}
+
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {stats.map((s) => (
                         <div key={s.label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 transition-all duration-200 hover:shadow-md">

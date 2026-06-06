@@ -3,10 +3,10 @@ import { customerApi } from "../api/customerApi";
 import { chitPlanApi } from "../api/chitPlanApi";
 import { chitCollectionApi } from "../api/chitCollectionApi";
 import api from "../api/axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../components/AuthContext";
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   UTILITIES
-───────────────────────────────────────────────────────────────────────────── */
+
 const fmt = (v) =>
     v == null
         ? "₹0"
@@ -23,9 +23,7 @@ const initials = (name) =>
         .slice(0, 2)
         .toUpperCase() || "??";
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   STEP BAR
-───────────────────────────────────────────────────────────────────────────── */
+
 const STEPS = ["Verify Phone", "Choose Plan", "My Dashboard"];
 
 function StepBar({ current }) {
@@ -58,15 +56,13 @@ function StepBar({ current }) {
     );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   STEP 1 — PHONE VERIFY
-───────────────────────────────────────────────────────────────────────────── */
+
 function PhoneVerifyStep({ onVerified }) {
     const [phone, setPhone] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Restore session from localStorage
+
     useEffect(() => {
         const customerId = localStorage.getItem("customerId");
         if (!customerId) return;
@@ -139,9 +135,6 @@ function PhoneVerifyStep({ onVerified }) {
     );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   STEP 2 — PLAN SELECTION
-───────────────────────────────────────────────────────────────────────────── */
 const PALETTES = [
     { bg: "bg-violet-50", border: "border-violet-200", badge: "bg-violet-100 text-violet-700", ring: "ring-violet-400", dot: "bg-violet-500" },
     { bg: "bg-amber-50", border: "border-amber-200", badge: "bg-amber-100 text-amber-700", ring: "ring-amber-400", dot: "bg-amber-500" },
@@ -156,6 +149,8 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
     const [selected, setSelected] = useState(null);
     const [enrolling, setEnrolling] = useState(false);
     const [error, setError] = useState("");
+    const goHome = () => navigate("/user/dashboard");
+    const navigate = useNavigate();
 
     useEffect(() => {
         (async () => {
@@ -203,7 +198,7 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
 
     return (
         <div className="w-full max-w-2xl mx-auto">
-            {/* Customer chip */}
+
             <div className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 mb-6">
                 <div className="w-10 h-10 rounded-full bg-gray-900 text-white flex items-center justify-center font-black text-sm flex-shrink-0">
                     {initials(customer.fullName)}
@@ -299,13 +294,16 @@ function PlanSelectStep({ customer, onEnrolled, onSkip }) {
                     <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Enrolling…</>
                 ) : selected ? `Enroll in "${selected.planName}" →` : "Select a plan to enroll"}
             </button>
+
+            <div className="text-center mt-4">
+                <button onClick={goHome} className="text-sm text-gray-400 hover:text-gray-600 underline underline-offset-2 transition">
+                    Cancel, go back to dashboard
+                </button>
+            </div>
         </div>
     );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   PLAN CARD
-───────────────────────────────────────────────────────────────────────────── */
 function ProgressBar({ paid, total, color }) {
     const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
     return (
@@ -387,9 +385,7 @@ function PlanCard({ plan, idx, isNew }) {
     );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   PAYMENT HISTORY
-───────────────────────────────────────────────────────────────────────────── */
+
 function PaymentHistorySection({ customerId }) {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -460,18 +456,17 @@ function PaymentHistorySection({ customerId }) {
     );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   DASHBOARD
-───────────────────────────────────────────────────────────────────────────── */
+
 function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState("plans");
+    const navigate = useNavigate();
 
     useEffect(() => {
         (async () => {
             try {
-                // Fetch enrollments using the correct API
+
                 const enrollData = await chitCollectionApi.getEnrollmentsByCustomer(customer.id);
                 console.log("Enrollments RAW:", enrollData);
 
@@ -493,6 +488,14 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
         })();
     }, [customer.id, newlyEnrolledPlan]);
 
+    onLogout = () => {
+        localStorage.removeItem("customerId");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+    }
+
+
     const newId = newlyEnrolledPlan?.id;
     const displayPlans = [
         ...plans.filter((p) => p.id === newId || p.chitPlanId === newId),
@@ -510,9 +513,10 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
         { key: "profile", label: "Profile", icon: "👤" },
     ];
 
+
     return (
         <div className="w-full max-w-2xl mx-auto">
-            {/* Success banner */}
+
             {newlyEnrolledPlan && (
                 <div className="bg-emerald-500 text-white rounded-2xl p-4 mb-5 flex items-center gap-3 shadow-lg shadow-emerald-100">
                     <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg flex-shrink-0">✓</div>
@@ -525,7 +529,7 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
                 </div>
             )}
 
-            {/* Header */}
+
             <div className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 mb-5">
                 <div className="w-11 h-11 rounded-full bg-gray-900 text-white flex items-center justify-center font-black text-sm flex-shrink-0">
                     {initials(customer.fullName)}
@@ -535,6 +539,7 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
                     <p className="text-xs text-gray-400">{customer.phone} · {customer.city || "—"}</p>
                 </div>
                 <button
+
                     onClick={onLogout}
                     className="ml-auto text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 rounded-full px-3 py-1.5 transition"
                 >
@@ -542,7 +547,7 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
                 </button>
             </div>
 
-            {/* Summary stats */}
+
             {!loading && finalPlans.length > 0 && (
                 <div className="grid grid-cols-3 gap-3 mb-5">
                     {[
@@ -558,7 +563,7 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
                 </div>
             )}
 
-            {/* Tabs */}
+
             <div className="flex gap-1 bg-gray-100 rounded-2xl p-1 mb-5">
                 {TABS.map((t) => (
                     <button
@@ -572,7 +577,6 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
                 ))}
             </div>
 
-            {/* Tab: My Plans */}
             {tab === "plans" && (
                 loading ? (
                     <div className="space-y-3">
@@ -598,10 +602,10 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
                 )
             )}
 
-            {/* Tab: Payment History */}
+
             {tab === "history" && <PaymentHistorySection customerId={customer.id} />}
 
-            {/* Tab: Profile */}
+
             {tab === "profile" && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                     <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">My Profile</h3>
@@ -637,22 +641,19 @@ function Dashboard({ customer, newlyEnrolledPlan, onLogout }) {
     );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   ROOT
-───────────────────────────────────────────────────────────────────────────── */
 export default function CustomerPortal() {
     const [step, setStep] = useState(0);
     const [customer, setCustomer] = useState(null);
     const [enrolledPlan, setEnrolledPlan] = useState(null);
+    const { logout } = useAuth();
 
     const handleVerified = (c) => { setCustomer(c); setStep(1); };
     const handleEnrolled = (plan) => { setEnrolledPlan(plan); setStep(2); };
     const handleSkip = () => setStep(2);
+
     const handleLogout = () => {
-        localStorage.removeItem("customerId");
-        setCustomer(null);
-        setEnrolledPlan(null);
-        setStep(0);
+        logout();
+        window.location.href = "/login";
     };
 
     return (

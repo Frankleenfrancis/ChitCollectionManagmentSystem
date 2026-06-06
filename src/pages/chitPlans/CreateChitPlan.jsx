@@ -12,19 +12,19 @@ export default function CreateChitPlan() {
     const { user } = useAuth();
     const userRole = user?.role;
 
-    // Form schema fields matching your core JPA columns
+
     const [formData, setFormData] = useState({
         planName: "",
         totalAmount: "",
         durationMonths: "",
         monthlyAmount: "",
         maxMembers: "",
-        amountPerMember: "", // 1. ADDED state property for tracking calculated member split
+        amountPerMember: "",
         description: "",
         startDate: "",
     });
 
-    // Handle value changes dynamically and compute calculations
+
     const handleChange = (e) => {
         const { name, value } = e.target;
 
@@ -35,7 +35,7 @@ export default function CreateChitPlan() {
             if (name === "totalAmount" || name === "durationMonths" || name === "maxMembers") {
                 const total = parseFloat(updated.totalAmount);
                 const duration = parseInt(updated.durationMonths, 10);
-                const membersCount = parseInt(updated.maxMembers, 10); // 2. Map to maxMembers instead of undefined "members"
+                const membersCount = parseInt(updated.maxMembers, 10);
 
 
                 if (total > 0 && duration > 0) {
@@ -46,7 +46,7 @@ export default function CreateChitPlan() {
                     if (membersCount > 0) {
                         updated.amountPerMember = Math.floor(monthlyAmt / membersCount).toString();
                     } else {
-                        updated.amountPerMember = ""; // Reset if member capacity is empty/0
+                        updated.amountPerMember = "";
                     }
                 } else {
 
@@ -127,7 +127,7 @@ export default function CreateChitPlan() {
         <div className="min-h-screen bg-gray-50 p-6 font-sans">
             <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
 
-                {/* Header Title */}
+
                 <div className="mb-6">
                     <h2 className="text-xl font-bold text-gray-900">Launch New Chit Plan</h2>
                     <p className="text-xs text-gray-400 mt-1">
@@ -137,7 +137,7 @@ export default function CreateChitPlan() {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
 
-                    {/* Plan Name */}
+
                     <div>
                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                             Plan Designation / Name (Unique)
@@ -154,7 +154,7 @@ export default function CreateChitPlan() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Total Chit Value */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                                 Total Amount Value (₹)
@@ -170,7 +170,7 @@ export default function CreateChitPlan() {
                             />
                         </div>
 
-                        {/* Duration Months */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                                 Lifecycle Duration (Months)
@@ -188,7 +188,7 @@ export default function CreateChitPlan() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Monthly Installment Rate */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                                 Calculated Monthly Installment (₹)
@@ -204,7 +204,7 @@ export default function CreateChitPlan() {
                             />
                         </div>
 
-                        {/* Maximum Member Capacity */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                                 Max Structural Member Capacity
@@ -221,7 +221,6 @@ export default function CreateChitPlan() {
                         </div>
                     </div>
 
-                    {/* 3. NEW INPUT GRID ROW FOR AMOUNT PER MEMBER */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -237,7 +236,7 @@ export default function CreateChitPlan() {
                             />
                         </div>
 
-                        {/* Start Date placed adjacent to maintain alignment */}
+
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                                 Activation Cycle Launch Date
@@ -253,7 +252,7 @@ export default function CreateChitPlan() {
                         </div>
                     </div>
 
-                    {/* Summary Description */}
+
                     <div>
                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                             Plan Terms Summary Description
@@ -268,7 +267,7 @@ export default function CreateChitPlan() {
                         />
                     </div>
 
-                    {/* Bottom Action Triggers */}
+
                     <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-50">
                         <button
                             type="button"

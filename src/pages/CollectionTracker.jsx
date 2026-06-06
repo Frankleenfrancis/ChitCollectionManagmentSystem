@@ -85,24 +85,11 @@ export default function CollectionTracker({ onBack }) {
     }, [page, debouncedSearch]);
 
 
-    // const filtered2 = useMemo(() => {
-    //     const keyword = search.toLowerCase();
-
-    //     return collectionEntry.filter((e) =>
-    //         (e.customerName || "")
-    //             .toLowerCase()
-    //             .includes(keyword) ||
-    //         (e.chitPlanName || "")
-    //             .toLowerCase()
-    //             .includes(keyword)
-    //     );
-    // }, [collectionEntry, search]);
-
     return (
         <div className="min-h-screen bg-gray-50 font-sans p-6 ">
             <div className="min-h-screen bg-gray-50 p-4 md:p-8">
                 <div className="max-w-7xl mx-auto">
-                    {/* Header */}
+
                     <div className="mb-4">
                         <button
                             type="button"
@@ -127,7 +114,7 @@ export default function CollectionTracker({ onBack }) {
                     </button>
 
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start pt-6">
-                        {/* Main Panel: List View */}
+
                         <div className="xl:col-span-2 space-y-4">
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                                 <input
@@ -179,23 +166,12 @@ export default function CollectionTracker({ onBack }) {
 
                         </div>
 
-                        {/* Sidebar Panel: Form */}
-                        {/* <div className="xl:col-span-1">
-                            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sticky top-8">
-                                <h2 className="text-base font-bold text-gray-900 mb-1">New Entry</h2>
-                                <p className="text-xs text-gray-400 mb-6">Complete the fields to register payment.</p>
-                                <RecordCollectionForm onPaymentSuccess={fetchActiveEnrollments} />
-                            </div>
-                        </div> */}
+
 
                         {showForm && (
                             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                                 <div className="bg-white rounded-xl w-full max-w-4xl h-[90vh] overflow-y-auto">
                                     <div className="flex justify-between items-center mb-4">
-                                        {/* <h2 className="text-lg font-bold">
-                                            Record Collection
-                                        </h2> */}
-
 
                                     </div>
 

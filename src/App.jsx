@@ -17,10 +17,12 @@ import ChitPlanList from "./pages/chitPlans/ChitPlanList";
 import DashboardPage from "./pages/Dashboard";
 import CustomerManageByInduvidual from "./pages/CustomerManageByInduvidual";
 import EnrollmentTracker from "./pages/EnrollementTracker";
-// import Mychits from "./pages/Mychits";
+
 import CustomerDashboard from "./pages/CustomerDashboard";
 import Payment from "./payment/Payment";
 import ChitEnrollCustomer from "./pages/ChitEnrollment";
+import JoinNewChit from "./pages/Joinnewchit";
+import CustomerPortal from "./pages/Dashboard";
 
 
 
@@ -211,7 +213,7 @@ function App() {
             path="/user/dashboard"
             element={
               <ProtectedRoute allowedRoles={["USER"]}>
-                <DashboardPage />
+                <CustomerPortal />
               </ProtectedRoute>
             }
           />
@@ -221,6 +223,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["CUSTOMER", "USER"]}>
                 <CustomerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/user/customer/enrollChits"
+            element={
+              <ProtectedRoute allowedRoles={["CUSTOMER", "USER"]}>
+                <JoinNewChit />
               </ProtectedRoute>
             }
           />

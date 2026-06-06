@@ -24,7 +24,7 @@ export default function EnrollmentTracker({ onBack }) {
             const data = await chitCollectionApi.getAllEnrollments(0, 50);
             const list = Array.isArray(data) ? data : (data?.content || []);
 
-            // ADD THIS LINE TO DEBUG:
+  
             console.log("API Data Structure:", list[0]);
 
             setEnrollments(list);
@@ -85,18 +85,6 @@ export default function EnrollmentTracker({ onBack }) {
     }, [page, debouncedSearch]);
 
 
-    // const filtered2 = useMemo(() => {
-    //     const keyword = search.toLowerCase();
-
-    //     return collectionEntry.filter((e) =>
-    //         (e.customerName || "")
-    //             .toLowerCase()
-    //             .includes(keyword) ||
-    //         (e.chitPlanName || "")
-    //             .toLowerCase()
-    //             .includes(keyword)
-    //     );
-    // }, [collectionEntry, search]);
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans p-6 ">
@@ -179,14 +167,7 @@ export default function EnrollmentTracker({ onBack }) {
 
                         </div>
 
-                        {/* Sidebar Panel: Form */}
-                        {/* <div className="xl:col-span-1">
-                            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sticky top-8">
-                                <h2 className="text-base font-bold text-gray-900 mb-1">New Entry</h2>
-                                <p className="text-xs text-gray-400 mb-6">Complete the fields to register payment.</p>
-                                <RecordCollectionForm onPaymentSuccess={fetchActiveEnrollments} />
-                            </div>
-                        </div> */}
+                    
 
                         {showForm && (
                             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

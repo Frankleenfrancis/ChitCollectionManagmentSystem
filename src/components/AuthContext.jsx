@@ -7,7 +7,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Load user from localStorage on page refresh
+
     useEffect(() => {
         try {
             const savedUser = localStorage.getItem("user");
@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    // Login
+  
     const login = async (username, password) => {
         try {
             setLoading(true);
@@ -40,6 +40,7 @@ export const AuthProvider = ({ children }) => {
                 email: data.email,
                 phone: data.phone,
                 role: data.role,
+                customerId: data.customerId ?? null,
             };
 
             localStorage.setItem("token", data.token);
@@ -56,12 +57,14 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Logout
+
     const logout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.removeItem("customerId"); // ✅ must be here
         setUser(null);
     };
+
 
     const isAdmin = user?.role === "ADMIN";
     const isAgent = user?.role === "AGENT";

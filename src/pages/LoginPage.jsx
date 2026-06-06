@@ -16,13 +16,13 @@ export default function LoginPage() {
     try {
       const response = await login(form.username, form.password);
 
-      // Add this console.log temporarily to see the exact shape
+    
       console.log("Login response:", response);
 
       const role =
-        response?.role ||           
-        response?.data?.role ||     
-        response?.data?.data?.role; 
+        response?.role ||
+        response?.data?.role ||
+        response?.data?.data?.role;
 
       if (role === "ADMIN") {
         navigate("/admin/dashboard");

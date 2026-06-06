@@ -53,21 +53,20 @@ export default function CustomerManagement() {
             .slice(0, 2)
             .toUpperCase() || "??";
 
-    // Debounce search
+
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(search), 400);
         return () => clearTimeout(t);
     }, [search]);
 
-    // ─── Load Customers ────────────────────────────────────────────────────────
+
     const loadCustomers = async () => {
         if (role === undefined || userId === undefined) return;
         try {
             setLoading(true);
 
             if (isCustomer) {
-                // Fetch all then filter by userId — safe fallback
-                // if your API has getByUserId use that instead
+
                 const data = await customerApi.getAll(0, 100, "createdAt", "desc");
                 const all = data.content || [];
                 const mine = all.filter(
@@ -79,7 +78,7 @@ export default function CustomerManagement() {
                 return;
             }
 
-            // ADMIN / AGENT
+
             let data;
             if (debouncedSearch.trim()) {
                 data = await customerApi.search(debouncedSearch, page, 10);
@@ -98,10 +97,9 @@ export default function CustomerManagement() {
 
     useEffect(() => {
         loadCustomers();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, debouncedSearch, role, userId]);
 
-    // ─── Plans ─────────────────────────────────────────────────────────────────
+
     const loadPlans = async () => {
         try {
             const response = await chitPlanApi.getAll();
@@ -119,9 +117,8 @@ export default function CustomerManagement() {
         loadPlans();
     }, []);
 
-    // ─── Filtered list (client-side search for non-customer roles) ─────────────
+
     const filteredCustomers = useMemo(() => {
-        // CUSTOMER role: already scoped to their own record from API
         if (isCustomer) return customers;
 
         const keyword = search.toLowerCase();
@@ -135,7 +132,6 @@ export default function CustomerManagement() {
         );
     }, [customers, search, isCustomer]);
 
-    // ─── Stats (scoped to visible data) ───────────────────────────────────────
     const visibleCustomers = isCustomer
         ? customers.filter((c) => c.id == userId)
         : customers;
@@ -153,7 +149,6 @@ export default function CustomerManagement() {
         0
     );
 
-    // ─── Formatting helpers ────────────────────────────────────────────────────
     const fmt = (v) => {
         if (v == null) return "₹0.00";
         return `₹${Number(v).toLocaleString("en-IN", {
@@ -169,7 +164,6 @@ export default function CustomerManagement() {
         return <div className={`animate-pulse bg-gray-200 rounded ${className}`} />;
     }
 
-    // ─── Form helpers ──────────────────────────────────────────────────────────
     const resetForm = () => {
         setForm({
             fullName: "",
@@ -208,7 +202,6 @@ export default function CustomerManagement() {
         }
     };
 
-    // ─── Enroll ────────────────────────────────────────────────────────────────
     const handleEnroll = async () => {
         if (!selectedCustomer || !selectedPlan) return;
         try {
@@ -224,7 +217,6 @@ export default function CustomerManagement() {
         }
     };
 
-    // ─── Stats cards ───────────────────────────────────────────────────────────
     const statsCards = [
         {
             title: isCustomer ? "My Profile" : "Total Customers",
@@ -275,12 +267,11 @@ export default function CustomerManagement() {
         },
     ];
 
-    // ─── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-gray-100 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
 
-                {/* Header */}
+            
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex items-start justify-between">
                         <button
@@ -309,7 +300,7 @@ export default function CustomerManagement() {
                         </h1>
                     </div>
 
-                    {/* Only ADMIN can create customers */}
+
                     {isAdmin && (
                         <button
                             onClick={openCreate}
@@ -321,7 +312,7 @@ export default function CustomerManagement() {
                     )}
                 </div>
 
-                {/* Stats Row */}
+
                 <div className="grid grid-cols-4 gap-4 mb-6">
                     {statsCards.map((card, i) => (
                         <div key={i} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
@@ -341,10 +332,10 @@ export default function CustomerManagement() {
                     ))}
                 </div>
 
-                {/* Table Card */}
+
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="p-5 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        {/* Search — hide for CUSTOMER (they only see themselves) */}
+
                         {!isCustomer && (
                             <div className="relative w-full lg:w-96">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -375,7 +366,7 @@ export default function CustomerManagement() {
                                     <th className="px-6 py-4 text-left">Total Value</th>
                                     <th className="px-6 py-4 text-left">Amount Paid</th>
                                     <th className="px-6 py-4 text-center">Status</th>
-                                    {/* Enroll column hidden for CUSTOMER */}
+
                                     {!isCustomer && (
                                         <th className="px-6 py-4 text-center">Enroll</th>
                                     )}
@@ -402,7 +393,7 @@ export default function CustomerManagement() {
                                             key={c.id}
                                             className="border-t border-gray-100 hover:bg-gray-50 transition"
                                         >
-                                            {/* Customer Name & ID */}
+
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-semibold text-blue-700">
@@ -450,7 +441,7 @@ export default function CustomerManagement() {
                                                 </span>
                                             </td>
 
-                                            {/* Enroll button — ADMIN/AGENT only */}
+
                                             {!isCustomer && (
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-center">
@@ -464,7 +455,7 @@ export default function CustomerManagement() {
                                                 </td>
                                             )}
 
-                                            {/* Actions menu */}
+
                                             <td className="px-6 py-4 relative">
                                                 <button
                                                     onClick={() =>
@@ -477,7 +468,7 @@ export default function CustomerManagement() {
 
                                                 {openMenu === c.id && (
                                                     <div className="absolute right-4 mt-2 w-44 bg-white border rounded-lg shadow-lg z-50">
-                                                        {/* View — everyone can view their own */}
+
                                                         <button
                                                             onClick={() => {
                                                                 openView(c);
@@ -488,7 +479,7 @@ export default function CustomerManagement() {
                                                             👁 View
                                                         </button>
 
-                                                        {/* Edit — ADMIN only */}
+
                                                         {isAdmin && (
                                                             <button
                                                                 onClick={() => {
@@ -510,7 +501,7 @@ export default function CustomerManagement() {
                         </table>
                     </div>
 
-                    {/* Pagination — hide for CUSTOMER (single record) */}
+
                     {!isCustomer && (
                         <div className="p-5 border-t border-gray-100 flex items-center justify-between">
                             <button
@@ -535,7 +526,7 @@ export default function CustomerManagement() {
                 </div>
             </div>
 
-            {/* ── Create / Edit / View Modal ───────────────────────────────────── */}
+
             {showModal && (
                 <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden">
@@ -574,7 +565,7 @@ export default function CustomerManagement() {
                                 ))}
                             </div>
 
-                            {/* ROLE selector — only visible to ADMIN */}
+
                             {isAdmin && (
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 block mb-2">ROLE</label>
@@ -602,7 +593,7 @@ export default function CustomerManagement() {
                                 />
                             </div>
 
-                            {/* Save/Cancel buttons — only for non-view and non-customer */}
+
                             {!viewMode && isAdmin && (
                                 <div className="flex items-center justify-end gap-3 pt-4">
                                     <button
@@ -622,7 +613,7 @@ export default function CustomerManagement() {
                                 </div>
                             )}
 
-                            {/* Close button for view mode */}
+
                             {viewMode && (
                                 <div className="flex items-center justify-end pt-4">
                                     <button
@@ -639,7 +630,7 @@ export default function CustomerManagement() {
                 </div>
             )}
 
-            {/* ── Enroll Modal — ADMIN/AGENT only ─────────────────────────────── */}
+
             {!isCustomer && selectedCustomer && (
                 <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">

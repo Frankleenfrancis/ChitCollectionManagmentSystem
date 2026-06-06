@@ -102,7 +102,7 @@ export default function ChitEnrollment() {
 
             alert("Customer successfully enrolled into Chit Scheme!");
 
-            // Reset form after success
+
             setFormData({
                 customerId: "",
                 planId: "",
@@ -137,7 +137,7 @@ export default function ChitEnrollment() {
         <div className="min-h-screen bg-gray-50 font-sans p-6 flex items-center justify-center">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm w-full max-w-lg p-6 space-y-6">
 
-                {/* Header */}
+
                 <div>
 
                     <button
@@ -174,7 +174,7 @@ export default function ChitEnrollment() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
 
-                    {/* Customer Selection Dropdown */}
+
                     <div>
                         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                             Select Customer <span className="text-red-500">*</span>
@@ -199,7 +199,7 @@ export default function ChitEnrollment() {
                         </select>
                     </div>
 
-                    {/* Chit Plan Selection Dropdown */}
+
                     <div>
                         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                             Assigned Chit Plan / Group <span className="text-red-500">*</span>
@@ -227,7 +227,7 @@ export default function ChitEnrollment() {
                         </select>
                     </div>
 
-                    {/* Date Input Entry Component */}
+
                     <div>
                         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                             Enrollment Matrix Date <span className="text-red-500">*</span>
@@ -242,7 +242,7 @@ export default function ChitEnrollment() {
                         />
                     </div>
 
-                    {/* Action Panel Buttons Layout */}
+
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
                         <button
                             type="button"

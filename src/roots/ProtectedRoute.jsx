@@ -7,7 +7,7 @@ export default function ProtectedRoute({
 }) {
     const { user, loading } = useAuth();
 
-    // Wait until AuthContext loads user from localStorage
+   
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -18,7 +18,7 @@ export default function ProtectedRoute({
 
     const token = localStorage.getItem("token");
 
-    // Not logged in
+ 
     if (!token || !user) {
         return <Navigate to="/login" replace />;
     }

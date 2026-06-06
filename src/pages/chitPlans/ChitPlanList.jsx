@@ -10,7 +10,7 @@ export default function ChitPlanList() {
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Search and Filter States
+
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedDuration, setSelectedDuration] = useState("");
 
@@ -19,7 +19,7 @@ export default function ChitPlanList() {
     const { user } = useAuth();
     const userRole = user?.role;
 
-    // Dynamic base route
+
     const basePath =
         userRole === "ADMIN"
             ? "/admin/dashboard"
@@ -27,7 +27,7 @@ export default function ChitPlanList() {
                 ? "/agent/dashboard"
                 : "/dashboard";
 
-    // Load plans from database on mount
+
     const fetchPlans = async () => {
         try {
             setLoading(true);
@@ -57,7 +57,7 @@ export default function ChitPlanList() {
         fetchPlans();
     }, []);
 
-    // Extract unique durations dynamically
+
     const durationOptions = useMemo(() => {
         const durations = plans
             .map((plan) => plan.durationMonths)
@@ -68,7 +68,7 @@ export default function ChitPlanList() {
         );
     }, [plans]);
 
-    // Client-side filtering logic
+
     const filteredPlans = useMemo(() => {
         return plans.filter((plan) => {
             const matchesSearch =
@@ -90,7 +90,7 @@ export default function ChitPlanList() {
         });
     }, [plans, searchTerm, selectedDuration]);
 
-    // Handle delete
+
     const handleDelete = async (
         id,
         planName
@@ -143,7 +143,7 @@ export default function ChitPlanList() {
     return (
         <div className="p-6 max-w-6xl mx-auto font-sans">
 
-            {/* Header */}
+
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">
@@ -169,10 +169,10 @@ export default function ChitPlanList() {
                 </button>
             </div>
 
-            {/* Search & Filter */}
+
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
 
-                {/* Search */}
+
                 <div className="flex-1 relative">
                     <input
                         type="text"
@@ -198,7 +198,7 @@ export default function ChitPlanList() {
                     )}
                 </div>
 
-                {/* Duration Filter */}
+
                 <div className="w-full sm:w-48">
                     <select
                         value={selectedDuration}
@@ -248,7 +248,7 @@ export default function ChitPlanList() {
                                 Monthly Share
                             </th>
 
-                            {/* 1. ADDED TABLE HEADER FOR INDIVIDUAL SHARE CAPACITY */}
+
                             <th className="p-4">
                                 Per Member Share
                             </th>
@@ -262,7 +262,7 @@ export default function ChitPlanList() {
                     <tbody className="divide-y divide-gray-50 text-sm text-gray-700">
                         {filteredPlans.length === 0 ? (
                             <tr>
-                                {/* Updated colSpan from 5 to 6 to encompass new structural column */}
+
                                 <td
                                     colSpan="6"
                                     className="p-8 text-center text-gray-400 text-xs"
@@ -275,7 +275,7 @@ export default function ChitPlanList() {
                         ) : (
                             filteredPlans.map(
                                 (plan) => {
-                                    // 2. DYNAMIC CALCULATION: Calculate individual breakdown on the fly
+
                                     const monthlyAmountNum = parseFloat(plan.monthlyAmount) || 0;
                                     const maxMembersNum = parseInt(plan.maxMembers, 10) || 0;
 
@@ -312,7 +312,7 @@ export default function ChitPlanList() {
                                                 {plan.monthlyAmount?.toLocaleString()}
                                             </td>
 
-                                            {/* 3. ADDED TABLE CELL WITH THE COMPUTED FRACTION */}
+
                                             <td className="p-4 font-mono font-semibold text-indigo-600">
                                                 {perMemberAmt > 0 ? (
                                                     <>
@@ -329,7 +329,7 @@ export default function ChitPlanList() {
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2">
 
-                                                    {/* Edit */}
+
                                                     <button
                                                         onClick={() =>
                                                             navigate(
@@ -341,7 +341,7 @@ export default function ChitPlanList() {
                                                         Edit
                                                     </button>
 
-                                                    {/* Delete */}
+
                                                     <button
                                                         onClick={() =>
                                                             handleDelete(

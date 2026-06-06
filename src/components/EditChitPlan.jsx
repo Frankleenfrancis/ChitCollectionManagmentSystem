@@ -109,7 +109,7 @@ export default function EditChitPlan() {
 
             await chitPlanApi.update(id, chitPlanPayload);
             toast.success("Chit plan scheme updated successfully");
-            navigate(-1); // Redirects smoothly back to your list view
+            navigate(-1);
         } catch (err) {
             console.error("Form transmission errors:", err);
             toast.error(err.response?.data?.message || "Failed to submit plan updates.");
@@ -130,7 +130,7 @@ export default function EditChitPlan() {
         <div className="min-h-screen bg-gray-50 p-6 font-sans">
             <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
 
-                {/* Screen Header Banner */}
+
                 <div className="border-b pb-4 mb-6">
                     <h1 className="text-xl font-bold text-gray-900">📋 Edit Chit Plan Scheme</h1>
                     <p className="text-xs text-gray-400 mt-1">
@@ -140,7 +140,7 @@ export default function EditChitPlan() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
 
-                    {/* Plan Identification */}
+
                     <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Plan Scheme Name *</label>
                         <input
@@ -154,7 +154,7 @@ export default function EditChitPlan() {
                         />
                     </div>
 
-                    {/* Financial Terms row */}
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">Total Chit Value (₹) *</label>
@@ -182,7 +182,7 @@ export default function EditChitPlan() {
                         </div>
                     </div>
 
-                    {/* Membership and Contribution row */}
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">Calculated Monthly Installment (₹)</label>
@@ -209,7 +209,7 @@ export default function EditChitPlan() {
                         </div>
                     </div>
 
-                    {/* Date and Description row */}
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">Scheme Start Date *</label>
@@ -237,7 +237,6 @@ export default function EditChitPlan() {
                         </div>
                     </div>
 
-                    {/* Action Footers */}
                     <div className="flex gap-3 pt-4 border-t mt-6">
                         <button
                             type="button"
