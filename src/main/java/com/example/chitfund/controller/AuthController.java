@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 
@@ -27,6 +28,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -53,11 +55,26 @@ public class AuthController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/admin/create-user")
+    @PostMapping(
+            value = "/admin/create-user",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<ApiResponse<AuthResponse>> createUserByAdmin(
-            @Valid @RequestBody AdminCreateUserRequest request) {
-        AuthResponse response = authService.createUserByAdmin(request);
-        return ResponseEntity.ok(ApiResponse.success("User created successfully", response));
+
+            @RequestPart("user") AdminCreateUserRequest request,
+
+            @RequestPart(value = "image", required = false)
+            MultipartFile image) {
+
+        AuthResponse response =
+                authService.createUserByAdmin(request, image);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "User created successfully",
+                        response
+                )
+        );
     }
 
 

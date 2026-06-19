@@ -22,6 +22,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +40,31 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final CustomerRepository customerRepository;
 
+
+    private final String UPLOAD_DIR = "uploads/";
+
+    private String saveImage(MultipartFile file) throws IOException {
+
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        String fileName =
+                System.currentTimeMillis() + "_" + file.getOriginalFilename();
+
+        Path uploadPath = Paths.get(UPLOAD_DIR);
+
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        Files.copy(
+                file.getInputStream(),
+                uploadPath.resolve(fileName),
+                StandardCopyOption.REPLACE_EXISTING);
+
+        return fileName;
+    }
 
     @Override
     public AuthResponse<User> login(
@@ -100,10 +132,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse<User> createUserByAdmin(AdminCreateUserRequest request) {
+    public AuthResponse<User> createUserByAdmin(AdminCreateUserRequest request, MultipartFile image) {
 
         if (userRepository.existsByUsername(request.getUsername()))
             throw new DuplicateDataException("Username already taken: " + request.getUsername());
+
+        String imageName = null;
+
+        try {
+            imageName = saveImage(image);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image");
+        }
 
         User user = User.builder()
                 .fullName(request.getFullName())
@@ -112,6 +152,7 @@ public class AuthServiceImpl implements AuthService {
                 .phone(request.getPhone())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole()) // ONLY ADMIN CONTROLS THIS
+                .profileImage(imageName)
                 .active(true)
                 .build();
 

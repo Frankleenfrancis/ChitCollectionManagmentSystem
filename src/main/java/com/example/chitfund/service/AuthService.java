@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,6 +18,6 @@ public interface AuthService {
     Page<User> getUsers(Pageable pageable, String search);
     AuthResponse<User> registerCustomer(RegisterRequest request);
 
-    AuthResponse<User> createUserByAdmin (AdminCreateUserRequest request);
+    AuthResponse<User> createUserByAdmin (AdminCreateUserRequest request, MultipartFile image);
     AuthResponse getProfile(Authentication authentication);
 }
